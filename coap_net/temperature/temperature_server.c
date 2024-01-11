@@ -21,7 +21,7 @@
 #define REG_TRY_INTERVAL    1
 
 #define SENSOR_TYPE         "temperature_sensor"
-#define SAMPLING_RATE       8
+#define SAMPLING_RATE       4
 
 /* Log configuration */
 #include "sys/log.h"
@@ -42,8 +42,8 @@ static struct etimer wait_connectivity;
 static struct etimer wait_registration;
 static struct etimer simulation;
 
-extern coap_resource_t res_temp;
-extern coap_resource_t res_alarm;
+extern coap_resource_t temperature_sensor;
+extern coap_resource_t temperature_switch;
 
 //*************************** UTILITY FUNCTIONS *****************************//
 
@@ -102,7 +102,7 @@ PROCESS_THREAD(temperature_server, ev, data)
         PROCESS_WAIT_UNTIL(etimer_expired(&wait_connectivity));
         check_connection();
     }
-    printf("CONNECTED\n");
+    LOG_INFO("Temperature server connected\n");
     
     // Registration
     LOG_INFO("Sending registration message\n");
@@ -117,23 +117,23 @@ PROCESS_THREAD(temperature_server, ev, data)
         PROCESS_WAIT_UNTIL(etimer_expired(&wait_registration));
     }
 
-    printf("REGISTERED\n");
-    printf("Starting temperature server\n");
+    LOG_INFO("Temperature server registered\n");
+    LOG_INFO("Starting temperature server\n");
 
     // RESOURCES ACTIVATION
-    coap_activate_resource(&res_temperature, "temperature");
-    coap_activate_resource(&res_alarm, "alarm");
+    coap_activate_resource(&temperature_sensor, "temperature_sensor");
+    coap_activate_resource(&temperature_switch, "temperature_switch");
 
     // SIMULATION
-    etimer_set(&simulation, CLOCK_SECOND * sampling_rate);
-    LOG_INFO("Simulation\n");
+    etimer_set(&simulation, CLOCK_SECOND * SAMPLING_RATE);
+    LOG_INFO("Simulation start\n");
     
     while (1) {
         PROCESS_WAIT_EVENT();
         
         if (ev == PROCESS_EVENT_TIMER && data == &simulation) {
-            res_temperature.trigger();
-            etimer_set(&simulation, CLOCK_SECOND * sampling_rate);
+            temperature_sensor.trigger();
+            etimer_set(&simulation, CLOCK_SECOND * SAMPLING_RATE);
         } 
     }
     

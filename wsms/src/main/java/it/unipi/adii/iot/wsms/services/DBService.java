@@ -5,21 +5,21 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.*;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+
 public final class DBService {
-	private static final Logger logger = LogManager.getLogger(DBService.class);
+    private final static Logger logger = LogManager.getLogger(DBService.class);
 	
-	private final static String DB_DEFAULT_IP = "localhost";
+    private final static String DB_DEFAULT_IP = "localhost";
     private final static String DB_DFAULT_PORT = "3306";
     private final static String DB_USER = "root";
     private final static String DB_PASSWORD = "root";
-    private final static String DB_NAME = "WSMS";
+    private final static String DB_NAME = "wsms";
 
     private static Connection conn = null;
-	private static DBService instance = null;
+    private static DBService instance = null;
 
     private DBService() {}
  
@@ -36,11 +36,9 @@ public final class DBService {
     					"?zeroDateTimeBehavior=CONVERT_TO_NULL&serverTimezone=CET";
     	if(conn == null) {
 	    	try {
-	            // DriverManager: The basic service for managing a set of JDBC drivers.
-	            conn = DriverManager.getConnection(connStr,
-	                    						DB_USER,
-	                    						DB_PASSWORD);
-	            //The Driver Manager provides the connection specified in the parameter string
+	            // DriverManager for managing a set of JDBC drivers.
+	            conn = DriverManager.getConnection(connStr,	DB_USER, DB_PASSWORD);
+
 	            if (conn == null) {
 	                logger.warn("DB connection not created");
 	            }
@@ -53,23 +51,28 @@ public final class DBService {
     }
     
     public void cleanDB() {
-    	String query =  "DELETE FROM sensors";
+	System.out.println("Cleaning db..");
+    	String[] queries = {"DELETE FROM sensor"};
     	getConnection();
-    	try (PreparedStatement ps = conn.prepareStatement(query);) 
-    	{
-    		ps.executeUpdate();
-        } catch (SQLException se) {
-        	logger.error("DB not cleaned: ", se);
-        }
+	
+	for(String q : queries) {
+	    	try (PreparedStatement ps = conn.prepareStatement(q);)
+	    	{
+	    		ps.executeUpdate();
+		} catch (SQLException se) {
+			logger.error("DB not cleaned: ", se);
+		}
+	}
     }
     
-    public boolean addSensor(String nodeId) {
-    	String query = "INSERT INTO sensors (nodeId) VALUES (?);";
+    public boolean addSensor(String nodeId, String dataType) {
+    	String query = "INSERT INTO sensor (nodeId, dataType) VALUES (?, ?);";
     	boolean success = true;
     	getConnection();
     	try (PreparedStatement ps = conn.prepareStatement(query);) 
     	{
     		ps.setString(1, nodeId);
+			ps.setString(2, dataType);
     		int insertedRow = ps.executeUpdate();
     		if(insertedRow < 1) {
     			logger.warn("Something wrong during in adding sensor");
@@ -77,20 +80,21 @@ public final class DBService {
     		}
 
         } catch (SQLException se) {
-        	logger.error("Error in the insert sensor query! ", se);
+        	logger.error("Error in the inserting query! ", se);
         	success = false;
         }
 
 		return success;
     }
     
-    public boolean deleteSensor (String nodeId) {
-    	String query =  "DELETE FROM sensors where nodeId = ?";
+    public boolean deleteSensor (String nodeId, String dataType) {
+    	String query = "DELETE FROM sensors where nodeId = ? and dataType = ?";
     	boolean success = true;
     	getConnection();
     	try (PreparedStatement ps = conn.prepareStatement(query);) 
     	{
     		ps.setString(1, nodeId);
+			ps.setString(2, dataType);
     		int insertedRow = ps.executeUpdate();
     		if(insertedRow < 1) {
     			logger.warn("Something wrong during add sensor");
@@ -98,7 +102,7 @@ public final class DBService {
     		}
     		
         } catch (SQLException se) {
-        	logger.error("Error in the delete sensor query! ", se);
+        	logger.error("Error in the deleting query! ", se);
         	success = false;
         }
         
@@ -129,7 +133,7 @@ public final class DBService {
     
     
     public boolean updateSensorState(String sensor, short status) {
-    	String query = "UPDATE sensors SET status=? WHERE nodeId=?;";
+    	String query = "UPDATE temperature SET status=? WHERE nodeId=?;";
     	boolean success = true;
     	getConnection();
     	try (PreparedStatement ps = conn.prepareStatement(query);) 
@@ -150,7 +154,7 @@ public final class DBService {
     }
     
     public boolean checkSensorExistence(String sensor) {
-    	String query = "SELECT nodeId FROM sensors WHERE nodeId=?;";
+    	String query = "SELECT nodeId FROM sensor WHERE nodeId=?;";
     	boolean success = false;
     	getConnection();
     	try (PreparedStatement ps = conn.prepareStatement(query);) 

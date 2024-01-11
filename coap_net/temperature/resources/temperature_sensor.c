@@ -11,7 +11,7 @@
 #define LOG_LEVEL LOG_LEVEL_APP
 
 /**************** RESOURCES **********************/
-#include "global_variables.h"
+#include "global_params.h"
 
 #define VARIATION 1
 
@@ -110,7 +110,7 @@ static void put_temperature_handler(coap_message_t *request, coap_message_t *res
         }
         free(type);
     }
-    printf("LOWER B: %d, UPPER B: %d\n", LOWER_BOUND_TEMP, UPPER_BOUND_TEMP);
+    printf("LB: %d, UB: %d\n", LOWER_BOUND_TEMP, UPPER_BOUND_TEMP);
 
     if(!success)
         coap_set_status_code(response, BAD_REQUEST_4_00);
@@ -119,7 +119,7 @@ static void put_temperature_handler(coap_message_t *request, coap_message_t *res
 static void temperature_event_handler(void)
 {
     if (!isActive) {
-        return; // DOES NOTHING SINCE IT IS TURNED OFF
+        return; // DOES NOTHING SINCE IS SWITCHED OFF
     }
 
     // extimate new temperature

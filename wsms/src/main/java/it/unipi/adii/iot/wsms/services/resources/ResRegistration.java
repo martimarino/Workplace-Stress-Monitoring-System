@@ -12,12 +12,12 @@ import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 
-import it.unipi.adii.iot.wsms.device.SmartDevice;
+import it.unipi.adii.iot.wsms.device.IoTDevice;
 
 public class ResRegistration extends CoapResource{
-	private static final Logger logger = LogManager.getLogger(SmartDevice.class);
+	private static final Logger logger = LogManager.getLogger(IoTDevice.class);
 	private static final DBService th = DBService.getInstance();
-	private static Collection<SmartDevice> smartDevices = Collections.synchronizedList(new ArrayList<>());
+	private static Collection<IoTDevice> ioTDevices = Collections.synchronizedList(new ArrayList<>());
 	
 	public ResRegistration() {
 		super("registration");
@@ -26,19 +26,19 @@ public class ResRegistration extends CoapResource{
 	@Override
 	public void handlePOST(CoapExchange exchange) {
 		exchange.accept();
-		String deviceType = exchange.getRequestText();
+		String dataType = exchange.getRequestText();
         String ipAddress = exchange.getSourceAddress().getHostAddress();
         
 		if (contains(ipAddress)<0) {
-			if(th.addSensor(ipAddress)) {
-        		synchronized(smartDevices) {
-        			ResRegistration.smartDevices.add(new SmartDevice(ipAddress));
+			if(th.addSensor(ipAddress, dataType)) {
+        		synchronized(ioTDevices) {
+        			ResRegistration.ioTDevices.add(new IoTDevice(ipAddress, dataType));
         		}
-				logger.info("A new smart device: [" + ipAddress + "] is now registered!");
+				logger.info("The smart device [" + ipAddress + "] has been registered!");
 				exchange.respond(CoAP.ResponseCode.CREATED, "Registration successful!".getBytes(StandardCharsets.UTF_8));
 			}
 			else {
-				logger.error("Impossible to add new device!");
+				logger.error("Impossible to add the device!");
 				exchange.respond(CoAP.ResponseCode.NOT_ACCEPTABLE, "Registration unsuccessful".getBytes(StandardCharsets.UTF_8));
 			}
 		} else
@@ -49,7 +49,7 @@ public class ResRegistration extends CoapResource{
 	public void handleDELETE(CoapExchange exchange) {
 		String[] request = exchange.getRequestText().split("-");
 		String ipAddress = request[0];
-		String deviceType = request[1];
+		String dataType = request[1];
 		boolean success = true;
 		
 		if (success)
@@ -61,7 +61,7 @@ public class ResRegistration extends CoapResource{
 	private static int contains(final String ipAddress) {
 		int idx = -1;
 		
-		for(SmartDevice device : smartDevices) {
+		for(IoTDevice device : ioTDevices) {
 			idx++;
 			if(device.getIP().contentEquals(ipAddress))
 				return idx;
@@ -73,8 +73,8 @@ public class ResRegistration extends CoapResource{
 		boolean success = true;
 		int idx = contains(ipAddress);
 		if (idx > -1) {
-			synchronized(smartDevices) {
-        		ResRegistration.smartDevices.remove(idx);
+			synchronized(ioTDevices) {
+        		ResRegistration.ioTDevices.remove(idx);
         	}
 			
 		} else {
