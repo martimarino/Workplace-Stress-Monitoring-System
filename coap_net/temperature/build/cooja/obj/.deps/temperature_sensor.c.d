@@ -30,7 +30,8 @@ build/cooja/obj/temperature_sensor.o: resources/temperature_sensor.c \
  ../../../../os/net/app-layer/coap/coap-observe-client.h \
  ../../../../os/dev/leds.h ../../../../os/dev/gpio-hal.h \
  ../../../../arch/platform/cooja/./dev/gpio-hal-arch.h \
- ../../../../os/sys/log.h ../../../../os/sys/log-conf.h global_params.h
+ ../../../../os/sys/node-id.h ../../../../os/sys/log.h \
+ ../../../../os/sys/log-conf.h global_params.h
 ../../../../os/net/app-layer/coap/module-macros.h:
 ../../../../os/net/app-layer/coap/coap-engine.h:
 ../../../../os/net/app-layer/coap/coap.h:
@@ -75,6 +76,7 @@ project-conf.h:
 ../../../../os/dev/leds.h:
 ../../../../os/dev/gpio-hal.h:
 ../../../../arch/platform/cooja/./dev/gpio-hal-arch.h:
+../../../../os/sys/node-id.h:
 ../../../../os/sys/log.h:
 ../../../../os/sys/log-conf.h:
 global_params.h:

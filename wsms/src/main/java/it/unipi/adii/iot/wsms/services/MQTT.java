@@ -11,7 +11,6 @@ import org.json.simple.parser.ParseException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import java.sql.Timestamp;
 
 public class MQTT implements MqttCallback {
 	
@@ -93,13 +92,12 @@ public class MQTT implements MqttCallback {
 			System.out.println("message parsed");
 			if (sensorMessage.containsKey("humidity")) {
 				long timestamp = Long.parseLong(sensorMessage.get("timestamp").toString());
-				Timestamp ts = new Timestamp(timestamp);
 				Integer value = Integer.parseInt(sensorMessage.get("humidity").toString());
 				String nodeId = sensorMessage.get("node").toString();
 				if(!th.checkSensorExistence(nodeId)) {
 					th.addSensor(nodeId, "humidity");
 				}
-				th.addObservation(nodeId, value, ts);
+				th.addObservation(nodeId, value, timestamp);
 				int lower = 30;
 				int upper = 60;
 				boolean on = false;
@@ -127,13 +125,12 @@ public class MQTT implements MqttCallback {
 			}
 			if (sensorMessage.containsKey("temperature")) {
 				long timestamp = Long.parseLong(sensorMessage.get("timestamp").toString());
-				Timestamp ts = new Timestamp(timestamp);
 				Integer value = Integer.parseInt(sensorMessage.get("temperature").toString());
 				String nodeId = sensorMessage.get("node").toString();
 				if(!th.checkSensorExistence(nodeId)) {
 					th.addSensor(nodeId, "temperature");
 				}
-				th.addObservation(nodeId, value, ts);
+				th.addObservation(nodeId, value, timestamp);
 				int lower = 19;
 				int upper = 24;
 				boolean on = false;
@@ -161,13 +158,12 @@ public class MQTT implements MqttCallback {
 			}
 			if (sensorMessage.containsKey("noise")) {
 				long timestamp = Long.parseLong(sensorMessage.get("timestamp").toString());
-				Timestamp ts = new Timestamp(timestamp);
 				Integer value = Integer.parseInt(sensorMessage.get("noise").toString());
 				String nodeId = sensorMessage.get("node").toString();
 				if(!th.checkSensorExistence(nodeId)) {
 					th.addSensor(nodeId, "noise");
 				}
-				th.addObservation(nodeId, value, ts);
+				th.addObservation(nodeId, value, timestamp);
 				int upper = 60;
 				boolean on = false;
 				String reply;

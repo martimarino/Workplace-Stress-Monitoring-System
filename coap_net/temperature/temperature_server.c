@@ -5,6 +5,7 @@
 #include "contiki.h"
 #include "sys/etimer.h"
 #include "dev/leds.h"
+#include "os/dev/button-hal.h"
 
 #include "node-id.h"
 #include "net/ipv6/simple-udp.h"
@@ -88,11 +89,12 @@ void client_chunk_handler(coap_message_t *response)
 
 PROCESS_THREAD(temperature_server, ev, data)
 {
+	button_hal_button_t *btn;
+	
     PROCESS_BEGIN();
 
     static coap_endpoint_t server_ep;
     static coap_message_t request[1]; // This way the packet can be treated as pointer as usual
-
   
     leds_set(LEDS_NUM_TO_MASK(LEDS_RED));
     etimer_set(&wait_connectivity, CLOCK_SECOND * CONN_TRY_INTERVAL);
@@ -135,6 +137,17 @@ PROCESS_THREAD(temperature_server, ev, data)
             temperature_sensor.trigger();
             etimer_set(&simulation, CLOCK_SECOND * SAMPLING_RATE);
         } 
+		if (ev == button_hal_press_event) {
+			btn = (button_hal_button_t *)data;
+			printf("Release event (%s)\n", BUTTON_HAL_GET_DESCRIPTION(btn));
+
+			// Sent a POST request to temperature_switch
+			coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
+			coap_set_header_uri_path(request, "/temperature_switch");
+
+			coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &server_ep);
+			COAP_BLOCKING_REQUEST(&server_ep, request, NULL);  // Ignore the response
+		}
     }
     
     PROCESS_END();

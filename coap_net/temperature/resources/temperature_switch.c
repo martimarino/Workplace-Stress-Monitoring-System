@@ -12,17 +12,17 @@
 bool isAuto = true;
 
 /*          HANDLERS          */
-static void put_switch_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
+static void post_put_switch_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 
 EVENT_RESOURCE(temperature_switch,
                "</temperature_switch>;title=\"Temperature switch\";rt=\"switch\"",
                NULL,
                NULL,
-               put_switch_handler,
-               NULL,
+               post_put_switch_handler,
+               post_put_switch_handler,
                NULL);
 
-static void put_switch_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
+static void post_put_switch_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
 {
     LOG_INFO("Handling switch put request...\n");
 
@@ -51,16 +51,16 @@ static void put_switch_handler(coap_message_t *request, coap_message_t *response
 	else if((len = coap_get_query_variable(request, "mode", &mode)))
     {
 		LOG_DBG("mode %s\n", mode);
+		
+		isAuto = !isAuto;
 
-        if(strncmp(mode, "auto", len) == 0) 
+        if(isAuto) 
         {
-            isAuto = true;
 			leds_set(1);
             LOG_INFO("Switched to automatic mode\n");
         }
-        if(strncmp(mode, "man", len) == 0) 
+        else 
         {
-            isAuto = false;
 			leds_set(0);
             LOG_INFO("Switched to manual mode\n");
         }

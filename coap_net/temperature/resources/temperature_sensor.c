@@ -4,9 +4,10 @@
 
 #include "coap-engine.h"
 #include "dev/leds.h"
-#include "sys/log.h"
+#include "node-id.h"
 
 /* Log configuration */
+#include "sys/log.h"
 #define LOG_MODULE "App"
 #define LOG_LEVEL LOG_LEVEL_APP
 
@@ -27,42 +28,38 @@ static void put_temperature_handler(coap_message_t *request, coap_message_t *res
 static void temperature_event_handler(void);
 
 EVENT_RESOURCE(temperature_sensor,
-               "</temperature_sensor>;title=\"Temperature sensor\";rt=\"sensor\"",
+               "title=\"Temperature sensor\";rt=\"sensor\";obs",
                get_temperature_handler,		// get handler
                NULL,						// post handler
                put_temperature_handler,		// put handler
                NULL,						// delete handler
                temperature_event_handler);
 			   
-		
-// Function to get the current timestamp		
-char* get_current_timestamp() {
-    time_t current_time;
-    time(&current_time);
-
-    struct tm *local_time = localtime(&current_time);
-
-    char *timestamp_str = (char *)malloc(20 * sizeof(char)); 
-    strftime(timestamp_str, 20, "%Y-%m-%d %H:%M:%S", local_time);
-
-    return timestamp_str;
-}
 
 // Handler for GET requests on the temperature_sensor resource
 static void get_temperature_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
-    LOG_INFO("Handling temperature get request...\n");
 
-    char *timestamp = get_current_timestamp();
+    if (temperature < LOWER_BOUND_TEMP)
+    {
+        LOG_WARN("Temperature is too low: (%d)\n", temperature);
+    }
+    else if (temperature > UPPER_BOUND_TEMP)
+    {
+        LOG_WARN("Temperature is too high: (%d)\n", temperature);
+    } else {
+		LOG_INFO("Temperature is normal: (%d)\n", temperature);
+	}
 
-    char* json_message;
-    nsprintf(&json_message, sizeof(json_message), "{\"timestamp\": %s, \"value\": %d}", timestamp, temperature);
+	// Fill the buffer
+    snprintf((char *)buffer, COAP_MAX_CHUNK_SIZE, "{\"node_id\":%d,\"timestamp\":%lu,\"value\":%d}", node_id, clock_seconds(), temperature);
+	int length = strlen((char*)buffer);
 
-    free(timestamp);
-	free(json_message);
+	printf("%s\n", buffer);
 
-    // Configure CoAP response with JSON in payload
-    coap_set_header_content_format(response, APPLICATION_JSON);
-    coap_set_payload(response, (uint8_t *)json_message, strlen(json_message));
+	// Set CoAP response msg
+	coap_set_header_content_format(response, APPLICATION_JSON);
+	coap_set_header_etag(response, (uint8_t *)&length, 1);
+	coap_set_payload(response, buffer, length);
 }
 
 // Handler for PUT requests on the temperature_sensor resource

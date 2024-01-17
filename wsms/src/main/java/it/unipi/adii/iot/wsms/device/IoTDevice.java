@@ -16,7 +16,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
 
-import java.sql.Timestamp;
+import java.util.Objects;
 
 
 public class IoTDevice {
@@ -75,35 +75,56 @@ public class IoTDevice {
 				new CoapHandler() {
 					public void onLoad(CoapResponse response) {
 
+						int nodeId = 0;
+						long timestamp = 0;
+						int value = 0;
+
+						boolean success = true;
+
+						if(response.getResponseText() == null || response.getResponseText().isEmpty())
+							return;
+
 						try {
 							JSONObject sensorMessage = (JSONObject) JSONValue.parseWithException(new String(response.getPayload()));
 
-							long timestamp = Long.parseLong(sensorMessage.get("timestamp").toString());
-							int value = Integer.parseInt(sensorMessage.get("value").toString());
-							long timestampInMillis = timestamp * 1000;  // Converti da secondi a millisecondi
-							Timestamp ts = new Timestamp(timestampInMillis);
+							nodeId = Integer.parseInt(sensorMessage.get("node_id").toString());
+							timestamp = Integer.parseInt(sensorMessage.get("timestamp").toString());
+							value = Integer.parseInt(sensorMessage.get("value").toString());
 
-							System.out.println("Ho ricevuto: " + timestamp + ", " + value);
-
-							Request req = new Request(Code.POST);
-
-							if (value < getLowerBound(dataType)) {
-								logger.warn(dataType + " too low! (" + value + ")");
-								req.setURI("coap://[" + ip + "]/" + dataType + "_switch?color=b");
-								req.send();
-							} else if (value > getUpperBound(dataType)) {
-								logger.warn(dataType + " too high! (" + value + ")");
-								req.setURI("coap://[" + ip + "]/"+dataType+"_switch?color=r");
-								req.send();
-							} else {
-								logger.info(dataType + " at normal level. " + value + ")");
-								req.setURI("coap://[" + ip + "]/" + dataType + "_switch?color=g");
-								req.send();
-							}
-							DBService.addObservation(ip, value, ts);
-						} catch (ParseException e) {
-							System.out.println("Error parsing JSON response: " + e);
+						} catch (ParseException pe) {
+							System.out.println(response.getResponseText());
+							logger.error("Impossible to parse the response!", pe);
+							success = false;
 						}
+
+						if(ip.endsWith(Integer.toString(nodeId))) {
+							if(!DBService.addObservation(ip, value, timestamp)) {
+								logger.warn("Impossible to add new observation!");
+								success = false;
+							}
+						} else {
+							logger.warn("Message destination is incorrect!");
+						}
+
+						if(!success)
+							return;
+
+						Request req = new Request(Code.POST);
+
+						if (value < getLowerBound(dataType)) {
+							logger.warn(dataType + " too low! (" + value + ")");
+							req.setURI("coap://[" + ip + "]/" + dataType + "_switch?color=b");
+							req.send();
+						} else if (value > getUpperBound(dataType)) {
+							logger.warn(dataType + " too high! (" + value + ")");
+							req.setURI("coap://[" + ip + "]/"+dataType+"_switch?color=r");
+							req.send();
+						} else {
+							logger.info(dataType + " at normal level. " + value + ")");
+							req.setURI("coap://[" + ip + "]/" + dataType + "_switch?color=g");
+							req.send();
+						}
+						DBService.addObservation(ip, value, timestamp);
 
 					}
 					

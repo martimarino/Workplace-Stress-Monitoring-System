@@ -16,6 +16,7 @@ build/cooja/obj/temperature_server.o: temperature_server.c \
  ../../../../os/sys/clock.h ../../../../os/dev/leds.h \
  ../../../../os/dev/gpio-hal.h \
  ../../../../arch/platform/cooja/./dev/gpio-hal-arch.h \
+ ../../../../os/dev/button-hal.h ../../../../os/sys/ctimer.h \
  ../../../../os/sys/node-id.h ../../../../os/net/linkaddr.h \
  ../../../../os/net/ipv6/simple-udp.h ../../../../os/net/ipv6/uip.h \
  ../../../../os/net/ipv6/uipopt.h ../../../../os/net/ipv6/uipbuf.h \
@@ -32,7 +33,7 @@ build/cooja/obj/temperature_server.o: temperature_server.c \
  ../../../../os/net/nbr-table.h ../../../../os/net/netstack.h \
  ../../../../os/net/mac/mac.h ../../../../os/dev/radio.h \
  ../../../../os/net/mac/framer/framer.h \
- ../../../../os/net/ipv6/uip-packetqueue.h ../../../../os/sys/ctimer.h \
+ ../../../../os/net/ipv6/uip-packetqueue.h \
  ../../../../os/net/ipv6/uip-ds6-route.h ../../../../os/lib/list.h \
  ../../../../os/net/ipv6/uip-debug.h ../../../../os/net/net-debug.h \
  ../../../../os/net/ipv6/uiplib.h ../../../../os/net/routing/routing.h \
@@ -79,6 +80,8 @@ project-conf.h:
 ../../../../os/dev/leds.h:
 ../../../../os/dev/gpio-hal.h:
 ../../../../arch/platform/cooja/./dev/gpio-hal-arch.h:
+../../../../os/dev/button-hal.h:
+../../../../os/sys/ctimer.h:
 ../../../../os/sys/node-id.h:
 ../../../../os/net/linkaddr.h:
 ../../../../os/net/ipv6/simple-udp.h:
@@ -104,7 +107,6 @@ project-conf.h:
 ../../../../os/dev/radio.h:
 ../../../../os/net/mac/framer/framer.h:
 ../../../../os/net/ipv6/uip-packetqueue.h:
-../../../../os/sys/ctimer.h:
 ../../../../os/net/ipv6/uip-ds6-route.h:
 ../../../../os/lib/list.h:
 ../../../../os/net/ipv6/uip-debug.h:
