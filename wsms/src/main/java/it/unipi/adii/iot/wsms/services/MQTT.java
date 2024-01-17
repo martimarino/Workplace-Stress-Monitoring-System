@@ -1,6 +1,5 @@
 package it.unipi.adii.iot.wsms.services;
 
-import it.unipi.adii.iot.wsms.device.IoTDevice;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttClient;
@@ -12,9 +11,10 @@ import org.json.simple.parser.ParseException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import java.sql.Timestamp;
 
 public class MQTT implements MqttCallback {
-
+	
 	private static String broker = "tcp://127.0.0.1:1883";
 	private static String clientId = "JavaCollector";
 	private static String subTopic = "humidity_sample";
@@ -51,17 +51,18 @@ public class MQTT implements MqttCallback {
 		}while(!mqttClient.isConnected());
 		logger.info("MQTT Connected!");
 	}
-
+	
 	public void publish (String topic, String content, String node) {
 		try {
 			MqttMessage message = new MqttMessage(content.getBytes());
-			mqttClient.publish(topic+"_"+node, message);
+			mqttClient.publish(topic, message);
 			logger.info("MQTT humidity switch published.");
 		} catch(MqttException e) {
 			logger.error("Publish failed.", e);
 		}
 	}
 
+	
 	public void connectionLost(Throwable cause) {
 		// TODO Auto-generated method stub
 		logger.error("Connection lost");
@@ -89,77 +90,100 @@ public class MQTT implements MqttCallback {
 		System.out.println("Message arrived: " + new String(payload));
 		try {
 			JSONObject sensorMessage = (JSONObject) JSONValue.parseWithException(new String(payload));
+			System.out.println("message parsed");
 			if (sensorMessage.containsKey("humidity")) {
-				int timestamp = Integer.parseInt(sensorMessage.get("timestamp").toString());
+				long timestamp = Long.parseLong(sensorMessage.get("timestamp").toString());
+				Timestamp ts = new Timestamp(timestamp);
 				Integer value = Integer.parseInt(sensorMessage.get("humidity").toString());
 				String nodeId = sensorMessage.get("node").toString();
-				if(!th.checkSensorExistence("mqtt://"+nodeId)) {
-					th.addSensor("mqtt://"+nodeId,"humidity");
+				if(!th.checkSensorExistence(nodeId)) {
+					th.addSensor(nodeId, "humidity");
 				}
-				th.addObservation("mqtt://"+nodeId, value, timestamp);
+				th.addObservation(nodeId, value, ts);
+				int lower = 30;
+				int upper = 60;
+				boolean on = false;
 				String reply;
-
-				if (value > IoTDevice.getLowerBound("humidity") && value <= IoTDevice.getUpperBound("humidity")) {
-					reply = "good_h";
-					publish(pubTopic, reply, nodeId);
-					logger.info("[NORMAL] - "+nodeId+" - the humidity is comfortable!");
-				} else if(value > IoTDevice.getUpperBound("humidity"))
+				
+				if (value > lower && value <= upper) {
+						reply = "good_h";
+						publish(pubTopic, reply, nodeId);
+                    	logger.info("[NORMAL] - "+nodeId+" - the humidity is comfortable!");
+			System.out.println("[NORMAL] - "+nodeId+" - the humidity is comfortable!");
+                    	//th.updateSensorState(nodeId, (short)0);
+				} else if(value > upper)
 				{
-					reply = "dec_h";
-					publish(pubTopic, reply, nodeId);
-					logger.info("[CRITICAL] - "+nodeId+" - the humidity is too low!");
+						reply = "dec_h";
+						publish(pubTopic, reply, nodeId);
+                    	logger.info("[CRITICAL] - "+nodeId+" - the humidity is too low!");
+                    	th.updateSensorState(nodeId, (short)0);
 				} else {
-					reply = "inc_h";
-					publish(pubTopic, reply, nodeId);
-					logger.info("[CRITICAL] - "+nodeId+" - the humidity is too low.");
+						reply = "inc_h";
+						publish(pubTopic, reply, nodeId);
+                    	logger.info("[CRITICAL] - "+nodeId+" - the humidity is too low.");
+                    	//th.updateSensorState(nodeId, (short)0);
 				}
+				 
 			}
 			if (sensorMessage.containsKey("temperature")) {
-				int timestamp = Integer.parseInt(sensorMessage.get("timestamp").toString());
+				long timestamp = Long.parseLong(sensorMessage.get("timestamp").toString());
+				Timestamp ts = new Timestamp(timestamp);
 				Integer value = Integer.parseInt(sensorMessage.get("temperature").toString());
 				String nodeId = sensorMessage.get("node").toString();
-				if(!th.checkSensorExistence("mqtt://"+nodeId)) {
-					th.addSensor("mqtt://"+nodeId,"temperature");
+				if(!th.checkSensorExistence(nodeId)) {
+					th.addSensor(nodeId, "temperature");
 				}
-				th.addObservation("mqtt://"+nodeId, value, timestamp);
+				th.addObservation(nodeId, value, ts);
+				int lower = 19;
+				int upper = 24;
+				boolean on = false;
 				String reply;
 
-				if (value > IoTDevice.getLowerBound("temperature") && value <= IoTDevice.getUpperBound("temperature")) {
-					reply = "good_t";
-					publish(pubTopic1, reply, nodeId);
-					logger.info("[NORMAL] - "+nodeId+" - the temperature is comfortable!");
-
-				} else if(value > IoTDevice.getUpperBound("temperature"))
+				if (value > lower && value <= upper) {
+						reply = "good_t";
+						publish(pubTopic1, reply, nodeId);
+						logger.info("[NORMAL] - "+nodeId+" - the temperature is comfortable!");
+						//th.updateSensorState(nodeId, (short)0);
+					
+				} else if(value > upper)
 				{
-					reply = "dec_t";
-					publish(pubTopic1, reply, nodeId);
-					logger.info("[CRITICAL] - "+nodeId+" - the temperature is too high!");
+						reply = "dec_t";
+						publish(pubTopic1, reply, nodeId);
+						logger.info("[CRITICAL] - "+nodeId+" - the temperature is too high!");
+						//th.updateSensorState(nodeId, (short)0);
 				} else {
-					reply = "inc_t";
-					publish(pubTopic1, reply, nodeId);
-					logger.info("[NORMAL] - "+nodeId+" - the temperature is too low.");
+						reply = "inc_t";
+						publish(pubTopic1, reply, nodeId);
+						logger.info("[NORMAL] - "+nodeId+" - the temperature is too low.");
+						//th.updateSensorState(nodeId, (short)0);
 				}
+
 			}
 			if (sensorMessage.containsKey("noise")) {
-				int timestamp = Integer.parseInt(sensorMessage.get("timestamp").toString());
+				long timestamp = Long.parseLong(sensorMessage.get("timestamp").toString());
+				Timestamp ts = new Timestamp(timestamp);
 				Integer value = Integer.parseInt(sensorMessage.get("noise").toString());
 				String nodeId = sensorMessage.get("node").toString();
-				if(!th.checkSensorExistence("mqtt://"+nodeId)) {
-					th.addSensor("mqtt://"+nodeId,"noise");
+				if(!th.checkSensorExistence(nodeId)) {
+					th.addSensor(nodeId, "noise");
 				}
-				th.addObservation("mqtt://"+nodeId, value, timestamp);
+				th.addObservation(nodeId, value, ts);
+				int upper = 60;
+				boolean on = false;
 				String reply;
 
-				if(value > IoTDevice.getUpperBound("noise"))
+				if(value > upper)
 				{
-					reply = "dec_n";
-					publish(pubTopic2, reply, nodeId);
-					logger.info("[CRITICAL] - "+nodeId+" - the noise is too high!");
+						reply = "dec_n";
+						publish(pubTopic2, reply, nodeId);
+						logger.info("[CRITICAL] - "+nodeId+" - the noise is too high!");
+						//th.updateSensorState(nodeId, (short)0);
 				} else {
-					state = 0;
-					reply = "good_n";
-					publish(pubTopic2, reply, nodeId);
-					logger.info("[NORMAL] - "+nodeId+" - the noise level is comfortable.");
+						state = 0;
+						reply = "good_n";
+						publish(pubTopic2, reply, nodeId);
+						logger.info("[NORMAL] - "+nodeId+" - the noise level is comfortable.");
+						//th.updateSensorState(nodeId, (short)0);
 				}
 
 			}
