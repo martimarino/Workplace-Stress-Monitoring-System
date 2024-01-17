@@ -12,6 +12,10 @@ import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Request;
 
 import it.unipi.adii.iot.wsms.services.resources.ResourceRegistration;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
+
+import java.sql.Timestamp;
 
 
 public class IoTDevice {
@@ -74,38 +78,32 @@ public class IoTDevice {
 							return;
 
 						String responseTxt = response.getResponseText();
-						System.out.println("Ho ricevuto: " + responseTxt);
+						System.out.println("Ho ricevuto: " +responseTxt);
+
+						// Parsing del JSON ricevuto con json-simple
+						JSONObject json = (JSONObject) JSONValue.parse(responseTxt);
+						long timestamp = Long.parseLong(json.get("timestamp").toString());
+						int value = Integer.parseInt(json.get("value").toString());
+						Timestamp ts = new Timestamp(timestamp);
+
+						System.out.println("Ho ricevuto: " + timestamp + ", " + value);
 
 						Request req = new Request(Code.POST);
-						String[] tokens = responseTxt.split(" ");
-						int value;
-						String warnType;
-						int timestamp;
 
-						if(responseTxt.startsWith("WARN")) {
-							warnType = tokens[1];
-							value = Integer.parseInt(tokens[2]);
-							timestamp = Integer.parseInt(tokens[3]);
-							switch (warnType) {
-								case "low":
-									logger.warn(dataType + " too low! (" + tokens[2] + ")");
-									req.setURI("coap://[" + ip + "]/"+dataType+"_switch?color=b");
-									req.send();
-									break;
-								case "high":
-									logger.warn(dataType + " too high! (" + tokens[2] + ")");
-									req.setURI("coap://[" + ip + "]/"+dataType+"_switch?color=r");
-									req.send();
-									break;
-							}
+						if (value < LOWER_BOUND_TEMP) {
+							logger.warn(dataType + " too low! (" + value + ")");
+							req.setURI("coap://[" + ip + "]/" + dataType + "_switch?color=b");
+							req.send();
+						} else if (value > UPPER_BOUND_TEMP) {
+								logger.warn(dataType + " too high! (" + value + ")");
+								req.setURI("coap://[" + ip + "]/"+dataType+"_switch?color=r");
+								req.send();
 						} else {
-							value = Integer.parseInt(tokens[0]);
-							timestamp = Integer.parseInt(tokens[1]);
-							logger.info(dataType + " at normal level. ");
-							req.setURI("coap://[" + ip + "]/"+dataType+"_switch?color=g");
+							logger.info(dataType + " at normal level. " + value + ")");
+							req.setURI("coap://[" + ip + "]/" + dataType + "_switch?color=g");
 							req.send();
 						}
-						DBService.addObservation(ip, value, );
+						DBService.addObservation(ip, value, ts);
 					}
 					
 					public void onError() {

@@ -91,7 +91,7 @@ public final class DBService {
     }
     
     public boolean deleteSensor (String nodeId, String dataType) {
-    	String query = "DELETE FROM sensors where nodeId = ? and dataType = ?";
+    	String query = "DELETE FROM sensor where nodeId = ? and dataType = ?";
     	boolean success = true;
     	getConnection();
     	try (PreparedStatement ps = conn.prepareStatement(query);) 
@@ -112,15 +112,15 @@ public final class DBService {
 		return success;
     }
     
-    public static boolean addObservation(String sensor, int value, long timestamp) {
-    	String query = "INSERT INTO observations (sensor, value, timestamp) VALUES (?, ?, ?);";
+    public static boolean addObservation(String sensor, int value, Timestamp timestamp) {
+    	String query = "INSERT INTO observation (sensor, value, timestamp) VALUES (?, ?, ?);";
     	boolean success = true;
     	getConnection();
     	try (PreparedStatement ps = conn.prepareStatement(query);) 
     	{
     		ps.setString(1, sensor);
     		ps.setInt(2, value);
-    		ps.setLong(3, timestamp);
+    		ps.setTimestamp(3, timestamp);
     		int insertedRow = ps.executeUpdate();
     		if(insertedRow < 1) {
     			logger.warn("Something wrong adding observation!");

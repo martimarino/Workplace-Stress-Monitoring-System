@@ -13,6 +13,8 @@ import org.json.simple.parser.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.sql.Timestamp;
+
 public class MQTT implements MqttCallback {
 
 	private static String broker = "tcp://127.0.0.1:1883";
@@ -90,13 +92,14 @@ public class MQTT implements MqttCallback {
 		try {
 			JSONObject sensorMessage = (JSONObject) JSONValue.parseWithException(new String(payload));
 			if (sensorMessage.containsKey("humidity")) {
-				int timestamp = Integer.parseInt(sensorMessage.get("timestamp").toString());
+				long timestamp = Long.parseLong(sensorMessage.get("timestamp").toString());
+				Timestamp ts = new Timestamp(timestamp);
 				Integer value = Integer.parseInt(sensorMessage.get("humidity").toString());
 				String nodeId = sensorMessage.get("node").toString();
 				if(!th.checkSensorExistence("mqtt://"+nodeId)) {
 					th.addSensor("mqtt://"+nodeId,"humidity");
 				}
-				th.addObservation("mqtt://"+nodeId, value, timestamp);
+				th.addObservation("mqtt://"+nodeId, value, ts);
 				String reply;
 
 				if (value > IoTDevice.getLowerBound("humidity") && value <= IoTDevice.getUpperBound("humidity")) {
@@ -115,13 +118,14 @@ public class MQTT implements MqttCallback {
 				}
 			}
 			if (sensorMessage.containsKey("temperature")) {
-				int timestamp = Integer.parseInt(sensorMessage.get("timestamp").toString());
+				long timestamp = Long.parseLong(sensorMessage.get("timestamp").toString());
+				Timestamp ts = new Timestamp(timestamp);
 				Integer value = Integer.parseInt(sensorMessage.get("temperature").toString());
 				String nodeId = sensorMessage.get("node").toString();
 				if(!th.checkSensorExistence("mqtt://"+nodeId)) {
 					th.addSensor("mqtt://"+nodeId,"temperature");
 				}
-				th.addObservation("mqtt://"+nodeId, value, timestamp);
+				th.addObservation("mqtt://"+nodeId, value, ts);
 				String reply;
 
 				if (value > IoTDevice.getLowerBound("temperature") && value <= IoTDevice.getUpperBound("temperature")) {
@@ -141,13 +145,14 @@ public class MQTT implements MqttCallback {
 				}
 			}
 			if (sensorMessage.containsKey("noise")) {
-				int timestamp = Integer.parseInt(sensorMessage.get("timestamp").toString());
+				long timestamp = Long.parseLong(sensorMessage.get("timestamp").toString());
+				Timestamp ts = new Timestamp(timestamp);
 				Integer value = Integer.parseInt(sensorMessage.get("noise").toString());
 				String nodeId = sensorMessage.get("node").toString();
 				if(!th.checkSensorExistence("mqtt://"+nodeId)) {
 					th.addSensor("mqtt://"+nodeId,"noise");
 				}
-				th.addObservation("mqtt://"+nodeId, value, timestamp);
+				th.addObservation("mqtt://"+nodeId, value, ts);
 				String reply;
 
 				if(value > IoTDevice.getUpperBound("noise"))
