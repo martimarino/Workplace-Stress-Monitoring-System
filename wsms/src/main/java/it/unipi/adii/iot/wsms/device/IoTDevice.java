@@ -14,6 +14,7 @@ import org.eclipse.californium.core.coap.Request;
 import it.unipi.adii.iot.wsms.services.resources.ResourceRegistration;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
+import org.json.simple.parser.ParseException;
 
 import java.sql.Timestamp;
 
@@ -74,36 +75,36 @@ public class IoTDevice {
 				new CoapHandler() {
 					public void onLoad(CoapResponse response) {
 
-						if(response.getResponseText() == null || response.getResponseText().isEmpty())
-							return;
+						try {
+							JSONObject sensorMessage = (JSONObject) JSONValue.parseWithException(new String(response.getPayload()));
 
-						String responseTxt = response.getResponseText();
-						System.out.println("Ho ricevuto: " +responseTxt);
+							long timestamp = Long.parseLong(sensorMessage.get("timestamp").toString());
+							int value = Integer.parseInt(sensorMessage.get("value").toString());
+							long timestampInMillis = timestamp * 1000;  // Converti da secondi a millisecondi
+							Timestamp ts = new Timestamp(timestampInMillis);
 
-						// Parsing del JSON ricevuto con json-simple
-						JSONObject json = (JSONObject) JSONValue.parse(responseTxt);
-						long timestamp = Long.parseLong(json.get("timestamp").toString());
-						int value = Integer.parseInt(json.get("value").toString());
-						Timestamp ts = new Timestamp(timestamp);
+							System.out.println("Ho ricevuto: " + timestamp + ", " + value);
 
-						System.out.println("Ho ricevuto: " + timestamp + ", " + value);
+							Request req = new Request(Code.POST);
 
-						Request req = new Request(Code.POST);
-
-						if (value < LOWER_BOUND_TEMP) {
-							logger.warn(dataType + " too low! (" + value + ")");
-							req.setURI("coap://[" + ip + "]/" + dataType + "_switch?color=b");
-							req.send();
-						} else if (value > UPPER_BOUND_TEMP) {
+							if (value < getLowerBound(dataType)) {
+								logger.warn(dataType + " too low! (" + value + ")");
+								req.setURI("coap://[" + ip + "]/" + dataType + "_switch?color=b");
+								req.send();
+							} else if (value > getUpperBound(dataType)) {
 								logger.warn(dataType + " too high! (" + value + ")");
 								req.setURI("coap://[" + ip + "]/"+dataType+"_switch?color=r");
 								req.send();
-						} else {
-							logger.info(dataType + " at normal level. " + value + ")");
-							req.setURI("coap://[" + ip + "]/" + dataType + "_switch?color=g");
-							req.send();
+							} else {
+								logger.info(dataType + " at normal level. " + value + ")");
+								req.setURI("coap://[" + ip + "]/" + dataType + "_switch?color=g");
+								req.send();
+							}
+							DBService.addObservation(ip, value, ts);
+						} catch (ParseException e) {
+							System.out.println("Error parsing JSON response: " + e);
 						}
-						DBService.addObservation(ip, value, ts);
+
 					}
 					
 					public void onError() {

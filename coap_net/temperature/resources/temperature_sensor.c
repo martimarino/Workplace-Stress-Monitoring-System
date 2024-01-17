@@ -54,10 +54,11 @@ static void get_temperature_handler(coap_message_t *request, coap_message_t *res
 
     char *timestamp = get_current_timestamp();
 
-    char json_message[100];
-    snprintf(json_message, sizeof(json_message), "{\"timestamp\": %s, \"value\": %d}", timestamp, temperature);
+    char* json_message;
+    nsprintf(&json_message, sizeof(json_message), "{\"timestamp\": %s, \"value\": %d}", timestamp, temperature);
 
     free(timestamp);
+	free(json_message);
 
     // Configure CoAP response with JSON in payload
     coap_set_header_content_format(response, APPLICATION_JSON);

@@ -111,7 +111,7 @@ public final class DBService {
 		return success;
     }
     
-    public boolean addObservation(String nodeId, int value, Timestamp timestamp) {
+    public static boolean addObservation(String nodeId, int value, Timestamp timestamp) {
     	String query = "INSERT INTO observation (sensor, value, timestamp) VALUES (?, ?, ?);";
     	boolean success = true;
     	getConnection();
