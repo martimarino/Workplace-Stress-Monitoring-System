@@ -14,15 +14,15 @@ import org.eclipse.californium.core.server.resources.CoapExchange;
 
 import it.unipi.adii.iot.wsms.device.IoTDevice;
 
-public class ResRegistration extends CoapResource{
+public class ResourceRegistration extends CoapResource {
 	private static final Logger logger = LogManager.getLogger(IoTDevice.class);
 	private static final DBService th = DBService.getInstance();
-	private static Collection<IoTDevice> ioTDevices = Collections.synchronizedList(new ArrayList<>());
+	private static final Collection<IoTDevice> coapDevices = Collections.synchronizedList(new ArrayList<>());
 	
-	public ResRegistration() {
+	public ResourceRegistration() {
 		super("registration");
 	}
-	
+
 	@Override
 	public void handlePOST(CoapExchange exchange) {
 		exchange.accept();
@@ -31,8 +31,9 @@ public class ResRegistration extends CoapResource{
         
 		if (contains(ipAddress)<0) {
 			if(th.addSensor(ipAddress, dataType)) {
-        		synchronized(ioTDevices) {
-        			ResRegistration.ioTDevices.add(new IoTDevice(ipAddress, dataType));
+				System.out.println("The smart device [" + ipAddress + "] has been registered!");
+        		synchronized(coapDevices) {
+        			ResourceRegistration.coapDevices.add(new IoTDevice(ipAddress, dataType));
         		}
 				logger.info("The smart device [" + ipAddress + "] has been registered!");
 				exchange.respond(CoAP.ResponseCode.CREATED, "Registration successful!".getBytes(StandardCharsets.UTF_8));
@@ -61,7 +62,7 @@ public class ResRegistration extends CoapResource{
 	private static int contains(final String ipAddress) {
 		int idx = -1;
 		
-		for(IoTDevice device : ioTDevices) {
+		for(IoTDevice device : coapDevices) {
 			idx++;
 			if(device.getIP().contentEquals(ipAddress))
 				return idx;
@@ -73,8 +74,8 @@ public class ResRegistration extends CoapResource{
 		boolean success = true;
 		int idx = contains(ipAddress);
 		if (idx > -1) {
-			synchronized(ioTDevices) {
-        		ResRegistration.ioTDevices.remove(idx);
+			synchronized(coapDevices) {
+        		ResourceRegistration.coapDevices.remove(idx);
         	}
 			
 		} else {

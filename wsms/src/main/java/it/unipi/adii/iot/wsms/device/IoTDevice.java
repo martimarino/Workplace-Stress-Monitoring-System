@@ -10,11 +10,8 @@ import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.coap.CoAP.Code;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Request;
-import org.json.simple.JSONObject;
-import org.json.simple.JSONValue;
-import org.json.simple.parser.ParseException;
 
-import it.unipi.adii.iot.wsms.services.resources.ResRegistration;
+import it.unipi.adii.iot.wsms.services.resources.ResourceRegistration;
 
 
 public class IoTDevice {
@@ -66,81 +63,56 @@ public class IoTDevice {
 	public IoTDevice(String ipAddress, String dataType) {
 
 		this.ip = ipAddress;
-		this.resSensor = new CoapClient("coap://[" + ipAddress + "]/sensor");
-		this.resSwitch = new CoapClient("coap://[" + ipAddress + "]/switch");
+		this.resSensor = new CoapClient("coap://[" + ipAddress + "]/"+dataType+"_sensor");
+		this.resSwitch = new CoapClient("coap://[" + ipAddress + "]/"+dataType+"_switch");
 		
 		CoapObserveRelation observeProperty = this.resSensor.observe(
 				new CoapHandler() {
 					public void onLoad(CoapResponse response) {
 
-						long timestamp;
-						int value;
-						int nodeId;
-
 						if(response.getResponseText() == null || response.getResponseText().isEmpty())
 							return;
-						
-						try {
-							JSONObject sensorMsg = (JSONObject) JSONValue.parseWithException(response.getResponseText());
-							
-							timestamp = Integer.parseInt(sensorMsg.get("timestamp").toString());
-							nodeId = Integer.parseInt(sensorMsg.get("node_id").toString());
-							value = Integer.parseInt(sensorMsg.get("value").toString());
 
-						} catch (ParseException pe) {
-							System.out.println(response.getResponseText());
-							logger.error("Exception in parsing coap response!", pe);
-							return;
-						}
-						
-						if(ip.endsWith(Integer.toString(nodeId))) {
-							if(!db_Service.addObservation(ip, value, timestamp)) {
-								logger.warn("New observation failed!");
-								return;
+						String responseTxt = response.getResponseText();
+						System.out.println("Ho ricevuto: " + responseTxt);
+
+						Request req = new Request(Code.POST);
+						String[] tokens = responseTxt.split(" ");
+						int value;
+						String warnType;
+						int timestamp;
+
+						if(responseTxt.startsWith("WARN")) {
+							warnType = tokens[1];
+							value = Integer.parseInt(tokens[2]);
+							timestamp = Integer.parseInt(tokens[3]);
+							switch (warnType) {
+								case "low":
+									logger.warn(dataType + " too low! (" + tokens[2] + ")");
+									req.setURI("coap://[" + ip + "]/"+dataType+"_switch?color=b");
+									req.send();
+									break;
+								case "high":
+									logger.warn(dataType + " too high! (" + tokens[2] + ")");
+									req.setURI("coap://[" + ip + "]/"+dataType+"_switch?color=r");
+									req.send();
+									break;
 							}
 						} else {
-							logger.warn("Destination msg is not correct!");
+							value = Integer.parseInt(tokens[0]);
+							timestamp = Integer.parseInt(tokens[1]);
+							logger.info(dataType + " at normal level. ");
+							req.setURI("coap://[" + ip + "]/"+dataType+"_switch?color=g");
+							req.send();
 						}
-
-						// compare values with bounds set
-						if (value < getLowerBound(dataType)) {
-//							state = 1;
-							//String payload = "mode=on";
-							Request req = new Request(Code.POST);
-//							//req.setPayload(payload);
-							req.setURI("coap://[" + ip + "]/switch?color=b");
-							req.send();
-							logger.info("[CRITICAL] - " + ip + " - the " + dataType + " value ("+value+") is too low!");
-							db_Service.updateSensorState(ip, state);
-
-						} else if(value > getUpperBound(dataType))
-						{
-//							state = 2;
-//							String payload = "mode=on";
-							Request req = new Request(Code.POST);
-//							req.setPayload(payload);
-							req.setURI("coap://[" + ip + "]/switch?color=r");
-							req.send();
-							logger.info("[CRITICAL] - " + ip + " - the " + dataType + " value ("+value+") is too high!");
-							db_Service.updateSensorState(ip, state);
-						} else {
-//							state = 0;
-//							String payload = "mode=on";
-							Request req = new Request(Code.POST);
-//							req.setPayload(payload);
-							req.setURI("coap://[" + ip + "]/switch?color=g");
-							req.send();
-							logger.info("[NORMAL] - " + ip + " - the " + dataType + " value ("+value+") is comfortable!");
-							db_Service.updateSensorState(ip, state);
-						}
-
+						DBService.addObservation(ip, value, );
 					}
 					
 					public void onError() {
 						stopObserve = true;
 //						logger.error("OBSERVING FAILED with " + dataType + " sensor " + ip);
 						
-						if(ResRegistration.removeDevice(ip)) {
+						if(ResourceRegistration.removeDevice(ip)) {
 							db_Service.deleteSensor(ip, dataType);
 							logger.error("OBSERVING FAILED with " + dataType + " sensor " + ip);
 						} else {

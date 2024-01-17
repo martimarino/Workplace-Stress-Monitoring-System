@@ -66,6 +66,9 @@ public final class DBService {
     }
     
     public boolean addSensor(String nodeId, String dataType) {
+
+		System.out.println("NodeId: " + nodeId + ", DataType: " + dataType);
+
     	String query = "INSERT INTO sensor (nodeId, dataType) VALUES (?, ?);";
     	boolean success = true;
     	getConnection();
@@ -109,7 +112,7 @@ public final class DBService {
 		return success;
     }
     
-    public boolean addObservation(String sensor, int value, long timestamp) {
+    public static boolean addObservation(String sensor, int value, long timestamp) {
     	String query = "INSERT INTO observations (sensor, value, timestamp) VALUES (?, ?, ?);";
     	boolean success = true;
     	getConnection();

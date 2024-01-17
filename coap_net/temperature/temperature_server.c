@@ -20,7 +20,7 @@
 #define CONN_TRY_INTERVAL   1
 #define REG_TRY_INTERVAL    1
 
-#define SENSOR_TYPE         "temperature_sensor"
+#define SENSOR_TYPE         "temperature"
 #define SAMPLING_RATE       4
 
 /* Log configuration */
