@@ -74,7 +74,6 @@ AUTOSTART_PROCESSES(&mqtt_humidity_client_process);
 #define BUFFER_SIZE 64
 
 static char client_id[BUFFER_SIZE];
-static char pub_topic[BUFFER_SIZE];
 static char sub_topic[BUFFER_SIZE];
 
 // Periodic timer to check the state of the MQTT client
@@ -102,7 +101,7 @@ static bool dec_humidity = false;
 #define MIN_HUMIDITY 0
 #define MAX_HUMIDITY 100
 static int humidity_level = 50;
-static bool mode = true;
+
 
 /*---------------------------------------------------------------------------*/
 static void
@@ -112,34 +111,28 @@ pub_handler(const char *topic, uint16_t topic_len, const uint8_t *chunk,
     printf("Pub Handler: topic='%s' (len=%u), chunk_len=%u\n", topic,
            topic_len, chunk_len);
 
-    if (!mode)
-    {
-        printf("Manual mode setted \n");
-        return;
-    }
-
     if(strcmp(topic, "humidity") == 0) {
         printf("Received Actuator command\n");
         printf("%s\n", chunk);
         if(strcmp((const char *)chunk, "inc_h")==0){
             printf("Turn on humidifier, high humidity level \n");
-            leds_on(LEDS_NUM_TO_MASK(LEDS_RED));
+            leds_set(LEDS_NUM_TO_MASK(LEDS_RED));
             inc_humidity = true;
             dec_humidity = false;
         }
         else if(strcmp((const char *)chunk, "dec_h")==0){
             printf("Turn on dehumidifier, low humidity level \n");
-            leds_on(LEDS_NUM_TO_MASK(LEDS_RED));
+            leds_set(LEDS_NUM_TO_MASK(LEDS_RED));
             inc_humidity = false;
             dec_humidity = true;
         }else if (strcmp((const char *)chunk, "good_h")==0){
             printf("Good humidity level!\n");
-            leds_on(LEDS_NUM_TO_MASK(LEDS_GREEN));
+            leds_set(LEDS_NUM_TO_MASK(LEDS_GREEN));
             inc_humidity = false;
             dec_humidity = false;
         }else if(strcmp((const char *)chunk, "off_h")==0){
             printf("Manual handling on!\n");
-            leds_on(LEDS_NUM_TO_MASK(LEDS_YELLOW));
+            leds_set(LEDS_NUM_TO_MASK(LEDS_YELLOW));
             inc_humidity = false;
             dec_humidity = false;
         }else{
@@ -248,9 +241,9 @@ char broker_address[CONFIG_IP_ADDR_STR_LEN];
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(mqtt_humidity_client_process, ev, data)
 {
-button_hal_button_t* btn;
+
 PROCESS_BEGIN();
-btn = button_hal_get_by_index(0);
+
 printf("MQTT Client Process\n");
 
 // Initialize the ClientID as MAC address
@@ -311,6 +304,7 @@ while(1) {
         }
 
         if(state == STATE_SUBSCRIBED){
+	    static char pub_topic[BUFFER_SIZE];
             sprintf(pub_topic, "%s", "humidity_sample");
 
             update_humidity_level();
@@ -333,21 +327,9 @@ while(1) {
         }
 
         etimer_set(&periodic_timer, STATE_MACHINE_PERIODIC);
-
+	
 }
-    if ((ev == button_hal_press_event))
-    {
-        btn = (button_hal_button_t*)data;
 
-        if (mode) { // if we are in automatic mode
-            printf("Button of the humidity sensor pressed, manual mode on \n");
-            mode = false;
-        }
-        else {
-            printf("Button of the humidity sensor pressed, automatic mode on \n");
-            mode = true;
-        }
-    }
 }
 
 PROCESS_END();

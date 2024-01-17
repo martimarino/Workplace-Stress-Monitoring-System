@@ -5,12 +5,13 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.*;
+import java.sql.Timestamp;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-
 public final class DBService {
-    private final static Logger logger = LogManager.getLogger(DBService.class);
+    private static final Logger logger = LogManager.getLogger(DBService.class.getName());
 	
     private final static String DB_DEFAULT_IP = "localhost";
     private final static String DB_DFAULT_PORT = "3306";
@@ -36,12 +37,16 @@ public final class DBService {
     					"?zeroDateTimeBehavior=CONVERT_TO_NULL&serverTimezone=CET";
     	if(conn == null) {
 	    	try {
-	            // DriverManager for managing a set of JDBC drivers.
-	            conn = DriverManager.getConnection(connStr,	DB_USER, DB_PASSWORD);
-
+	            // DriverManager: The basic service for managing a set of JDBC drivers.
+	            conn = DriverManager.getConnection(connStr,
+	                    						DB_USER,
+	                    						DB_PASSWORD);
+	            //The Driver Manager provides the connection specified in the parameter string
 	            if (conn == null) {
 	                logger.warn("DB connection not created");
-	            }
+	            }else{
+			System.out.println("DB connection succesfully created");
+			}
 	        } catch (SQLException se) {
 	            logger.error("DB connection failed.", se);
 	            conn = null;
@@ -51,31 +56,25 @@ public final class DBService {
     }
     
     public void cleanDB() {
-	System.out.println("Cleaning db..");
-    	String[] queries = {"DELETE FROM sensor"};
+    	String query =  "DELETE FROM sensor";
     	getConnection();
-	
-	for(String q : queries) {
-	    	try (PreparedStatement ps = conn.prepareStatement(q);)
-	    	{
-	    		ps.executeUpdate();
-		} catch (SQLException se) {
-			logger.error("DB not cleaned: ", se);
-		}
-	}
+    	try (PreparedStatement ps = conn.prepareStatement(query);) 
+    	{
+    		ps.executeUpdate();
+        } catch (SQLException se) {
+        	logger.error("DB not cleaned: ", se);
+        }
     }
     
     public boolean addSensor(String nodeId, String dataType) {
-
-		System.out.println("NodeId: " + nodeId + ", DataType: " + dataType);
-
     	String query = "INSERT INTO sensor (nodeId, dataType) VALUES (?, ?);";
+	System.out.println("NodeId: " + nodeId + ", DataType: " + dataType);
     	boolean success = true;
     	getConnection();
     	try (PreparedStatement ps = conn.prepareStatement(query);) 
     	{
     		ps.setString(1, nodeId);
-			ps.setString(2, dataType);
+		ps.setString(2, dataType);
     		int insertedRow = ps.executeUpdate();
     		if(insertedRow < 1) {
     			logger.warn("Something wrong during in adding sensor");
@@ -83,7 +82,7 @@ public final class DBService {
     		}
 
         } catch (SQLException se) {
-        	logger.error("Error in the inserting query! ", se);
+        	logger.error("Error in the insert sensor query! ", se);
         	success = false;
         }
 
@@ -91,13 +90,13 @@ public final class DBService {
     }
     
     public boolean deleteSensor (String nodeId, String dataType) {
-    	String query = "DELETE FROM sensor where nodeId = ? and dataType = ?";
+    	String query =  "DELETE FROM sensor where nodeId = ? and dataType = ?";
     	boolean success = true;
     	getConnection();
     	try (PreparedStatement ps = conn.prepareStatement(query);) 
     	{
     		ps.setString(1, nodeId);
-			ps.setString(2, dataType);
+		ps.setString(2, dataType);
     		int insertedRow = ps.executeUpdate();
     		if(insertedRow < 1) {
     			logger.warn("Something wrong during add sensor");
@@ -105,20 +104,20 @@ public final class DBService {
     		}
     		
         } catch (SQLException se) {
-        	logger.error("Error in the deleting query! ", se);
+        	logger.error("Error in the delete sensor query! ", se);
         	success = false;
         }
         
 		return success;
     }
     
-    public static boolean addObservation(String sensor, int value, Timestamp timestamp) {
+    public boolean addObservation(String nodeId, int value, Timestamp timestamp) {
     	String query = "INSERT INTO observation (sensor, value, timestamp) VALUES (?, ?, ?);";
     	boolean success = true;
     	getConnection();
     	try (PreparedStatement ps = conn.prepareStatement(query);) 
     	{
-    		ps.setString(1, sensor);
+    		ps.setString(1, nodeId);
     		ps.setInt(2, value);
     		ps.setTimestamp(3, timestamp);
     		int insertedRow = ps.executeUpdate();
@@ -136,7 +135,7 @@ public final class DBService {
     
     
     public boolean updateSensorState(String sensor, short status) {
-    	String query = "UPDATE temperature SET status=? WHERE nodeId=?;";
+    	String query = "UPDATE sensor SET active=? WHERE nodeId=?;";
     	boolean success = true;
     	getConnection();
     	try (PreparedStatement ps = conn.prepareStatement(query);) 
