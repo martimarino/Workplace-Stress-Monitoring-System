@@ -13,17 +13,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class MQTT implements MqttCallback {
-	
+
 	private static String broker = "tcp://127.0.0.1:1883";
 	private static String clientId = "JavaCollector";
 	private static String subTopic = "humidity_sample";
-	private static String subTopic1 = "temperature_sample";
-	private static String subTopic2 = "noise_sample";
+	private static String subTopic1 = "brightness_sample";
 	private static String pubTopic = "humidity";
-	private static String pubTopic1 = "temperature";
-	private static String pubTopic2 = "noise";
+	private static String pubTopic1 = "brightness";
 	private static MqttClient mqttClient = null;
-	private short state = 0;
 	private static final Logger logger = LogManager.getLogger(MQTT.class);
 	private static final DBService th = DBService.getInstance();
 
@@ -36,8 +33,8 @@ public class MQTT implements MqttCallback {
 				mqttClient.connect();
 				mqttClient.subscribe(subTopic);
 				mqttClient.subscribe(subTopic1);
-				mqttClient.subscribe(subTopic2);
 				System.out.println("subscribe done to " + subTopic);
+				System.out.println("subscribe done to " + subTopic1);
 				System.out.println(mqttClient.isConnected());
 			}catch(MqttException me) {
 				logger.error("Retrying to connect to MQTT...", me);
@@ -50,18 +47,18 @@ public class MQTT implements MqttCallback {
 		}while(!mqttClient.isConnected());
 		logger.info("MQTT Connected!");
 	}
-	
+
 	public void publish (String topic, String content, String node) {
 		try {
 			MqttMessage message = new MqttMessage(content.getBytes());
-			mqttClient.publish(topic, message);
-			logger.info("MQTT humidity switch published.");
+			mqttClient.publish(topic+"_"+node, message);
+			logger.info("MQTT switch published.");
 		} catch(MqttException e) {
 			logger.error("Publish failed.", e);
 		}
 	}
 
-	
+
 	public void connectionLost(Throwable cause) {
 		// TODO Auto-generated method stub
 		logger.error("Connection lost");
@@ -74,6 +71,7 @@ public class MQTT implements MqttCallback {
 				timeWindow *= 2;
 				mqttClient.connect();
 				mqttClient.subscribe(subTopic);
+				mqttClient.subscribe(subTopic1);
 				logger.warn("Connection restored");
 			}catch(MqttException me) {
 				logger.error("Unable to connect to MQTT collector", me);
@@ -94,94 +92,78 @@ public class MQTT implements MqttCallback {
 				long timestamp = Long.parseLong(sensorMessage.get("timestamp").toString());
 				Integer value = Integer.parseInt(sensorMessage.get("humidity").toString());
 				String nodeId = sensorMessage.get("node").toString();
+				Integer mode = Integer.parseInt(sensorMessage.get("mode").toString());
 				if(!th.checkSensorExistence(nodeId)) {
 					th.addSensor(nodeId, "humidity");
 				}
-				DBService.addObservation(nodeId, value, timestamp);
+				th.addObservation(nodeId, value, timestamp);
 				int lower = 30;
 				int upper = 60;
 				boolean on = false;
 				String reply;
-				
-				if (value > lower && value <= upper) {
-						reply = "good_h";
-						publish(pubTopic, reply, nodeId);
-                    	logger.info("[NORMAL] - "+nodeId+" - the humidity is comfortable!");
-			System.out.println("[NORMAL] - "+nodeId+" - the humidity is comfortable!");
-                    	//th.updateSensorState(nodeId, (short)0);
-				} else if(value > upper)
-				{
-						reply = "dec_h";
-						publish(pubTopic, reply, nodeId);
-                    	logger.info("[CRITICAL] - "+nodeId+" - the humidity is too low!");
-                    	th.updateSensorState(nodeId, (short)0);
-				} else {
-						reply = "inc_h";
-						publish(pubTopic, reply, nodeId);
-                    	logger.info("[CRITICAL] - "+nodeId+" - the humidity is too low.");
-				}
-				 
-			}
-			if (sensorMessage.containsKey("temperature")) {
-				long timestamp = Long.parseLong(sensorMessage.get("timestamp").toString());
-				Integer value = Integer.parseInt(sensorMessage.get("temperature").toString());
-				String nodeId = sensorMessage.get("node").toString();
-				if(!th.checkSensorExistence(nodeId)) {
-					th.addSensor(nodeId, "temperature");
-				}
-				DBService.addObservation(nodeId, value, timestamp);
-				int lower = 19;
-				int upper = 24;
-				boolean on = false;
-				String reply;
 
-				if (value > lower && value <= upper) {
-						reply = "good_t";
-						publish(pubTopic1, reply, nodeId);
-						logger.info("[NORMAL] - "+nodeId+" - the temperature is comfortable!");
-						//th.updateSensorState(nodeId, (short)0);
-					
+				if(mode == 1)
+				{
+					reply = "off_h";
+					publish(pubTopic, reply, nodeId);
+					logger.info("[MANUAL MODE] - "+nodeId+" - the humidity is controlled manually");
+					System.out.println("[MANUAL MODE] - "+nodeId+" - the humidity is controlled manually");
+				}
+				else if (value > lower && value <= upper) {
+					reply = "good";
+					publish(pubTopic, reply, nodeId);
+					logger.info("[NORMAL] - "+nodeId+" - the humidity is comfortable!");
+					System.out.println("[NORMAL] - "+nodeId+" - the humidity is comfortable!");
 				} else if(value > upper)
 				{
-						reply = "dec_t";
-						publish(pubTopic1, reply, nodeId);
-						logger.info("[CRITICAL] - "+nodeId+" - the temperature is too high!");
-						//th.updateSensorState(nodeId, (short)0);
+					reply = "dec";
+					publish(pubTopic, reply, nodeId);
+					logger.info("[CRITICAL] - "+nodeId+" - the humidity is too low!");
+					th.updateSensorState(nodeId, (short)0);
 				} else {
-						reply = "inc_t";
-						publish(pubTopic1, reply, nodeId);
-						logger.info("[NORMAL] - "+nodeId+" - the temperature is too low.");
-						//th.updateSensorState(nodeId, (short)0);
+					reply = "inc";
+					publish(pubTopic, reply, nodeId);
+					logger.info("[CRITICAL] - "+nodeId+" - the humidity is too low.");
 				}
 
 			}
-			if (sensorMessage.containsKey("noise")) {
+			if (sensorMessage.containsKey("brightness")) {
 				long timestamp = Long.parseLong(sensorMessage.get("timestamp").toString());
-				Integer value = Integer.parseInt(sensorMessage.get("noise").toString());
+				Integer value = Integer.parseInt(sensorMessage.get("brightness").toString());
 				String nodeId = sensorMessage.get("node").toString();
+				Integer mode = Integer.parseInt(sensorMessage.get("mode").toString());
 				if(!th.checkSensorExistence(nodeId)) {
-					th.addSensor(nodeId, "noise");
+					th.addSensor(nodeId, "brightness");
 				}
 				th.addObservation(nodeId, value, timestamp);
-				int upper = 60;
+				int lower = 300;
+				int upper = 400;
 				boolean on = false;
 				String reply;
-
-				if(value > upper)
+				if(mode == 1)
 				{
-						reply = "dec_n";
-						publish(pubTopic2, reply, nodeId);
-						logger.info("[CRITICAL] - "+nodeId+" - the noise is too high!");
-						//th.updateSensorState(nodeId, (short)0);
+					reply = "off_h";
+					publish(pubTopic, reply, nodeId);
+					logger.info("[MANUAL MODE] - "+nodeId+" - the brightness is controlled manually");
+					System.out.println("[MANUAL MODE] - "+nodeId+" - the brightness is controlled manually");
+				}
+				else if (value > lower && value <= upper) {
+					reply = "good";
+					publish(pubTopic1, reply, nodeId);
+					logger.info("[NORMAL] - "+nodeId+" - the brightness is comfortable!");
+				} else if(value > upper)
+				{
+					reply = "dec";
+					publish(pubTopic1, reply, nodeId);
+					logger.info("[CRITICAL] - "+nodeId+" - the brightness is too high!");
 				} else {
-						state = 0;
-						reply = "good_n";
-						publish(pubTopic2, reply, nodeId);
-						logger.info("[NORMAL] - "+nodeId+" - the noise level is comfortable.");
-						//th.updateSensorState(nodeId, (short)0);
+					reply = "inc";
+					publish(pubTopic1, reply, nodeId);
+					logger.info("[CRITICAL] - "+nodeId+" - the brightness is too low.");
 				}
 
 			}
+
 		} catch (ParseException e) {
 			logger.error("Parse exception", e);
 		}

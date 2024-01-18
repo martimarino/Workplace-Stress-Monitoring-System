@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stdbool.h>
+#include <time.h>
+#include <math.h>
 /*---------------------------------------------------------------------------*/
 #define LOG_MODULE "mqtt-client"
 #ifdef MQTT_CLIENT_CONF_LOG_LEVEL
@@ -37,8 +39,8 @@ static const char *broker_ip = MQTT_CLIENT_BROKER_IP_ADDR;
 // Defaukt config values
 #define DEFAULT_BROKER_PORT         1883
 #define DEFAULT_PUBLISH_INTERVAL    (30 * CLOCK_SECOND)
-#define LOWER_BOUND_HUM             30
-#define UPPER_BOUND_HUM             60
+#define LOWER_BOUND_LUM             300
+#define UPPER_BOUND_LUM             500
 #define VARIATION                   1
 
 static long PUBLISH_INTERVAL = DEFAULT_PUBLISH_INTERVAL;
@@ -58,8 +60,8 @@ static uint8_t state;
 #define STATE_DISCONNECTED    5
 
 /*---------------------------------------------------------------------------*/
-PROCESS_NAME(mqtt_humidity_client_process);
-AUTOSTART_PROCESSES(&mqtt_humidity_client_process);
+PROCESS_NAME(mqtt_brightness_client_process);
+AUTOSTART_PROCESSES(&mqtt_brightness_client_process);
 
 /*---------------------------------------------------------------------------*/
 /* Maximum TCP segment size for outgoing segments of our socket */
@@ -89,17 +91,14 @@ static long STATE_MACHINE_PERIODIC = DEFAULT_STATE_MACHINE_PERIODIC;
 static char app_buffer[APP_BUFFER_SIZE];
 /*---------------------------------------------------------------------------*/
 static struct mqtt_message *msg_ptr = 0;
-
 static struct mqtt_connection conn;
 
 /*---------------------------------------------------------------------------*/
-PROCESS(mqtt_humidity_client_process, "Humidity MQTT Client");
+PROCESS(mqtt_brightness_client_process, "Brightness MQTT Client");
 
-static bool inc_humidity = false;
-static bool dec_humidity = false;
-#define MIN_HUMIDITY 0
-#define MAX_HUMIDITY 100
-static int humidity_level = 50;
+#define MIN_BRIGHTNESS 0
+#define MAX_BRIGHTNESS 100
+static int brightness_level = 400;
 static int mode = 0; //mode 0 = automatic mode, mode 1 = manual mode
 
 /*---------------------------------------------------------------------------*/
@@ -110,33 +109,25 @@ pub_handler(const char *topic, uint16_t topic_len, const uint8_t *chunk,
     char message[64];
     printf("Pub Handler: topic='%s' (len=%u), chunk_len=%u\n", topic,
            topic_len, chunk_len);
-    strcpy(message, "humidity_");
-    sprintf(message + strlen("humidity_"), "%d", node_id);
+    strcpy(message, "brightness_");
+    sprintf(message + strlen("brightness_"), "%d", node_id);
 
     if(strcmp(topic, message) == 0) {
         printf("Received Actuator command\n");
         printf("%s\n", chunk);
         if(strcmp((const char *)chunk, "inc")==0){
-            printf("Turn on humidifier, high humidity level \n");
+            printf("Turn on light, low brightness level \n");
             leds_set(LEDS_NUM_TO_MASK(LEDS_RED));
-            inc_humidity = true;
-            dec_humidity = false;
         }
         else if(strcmp((const char *)chunk, "dec")==0){
-            printf("Turn on dehumidifier, low humidity level \n");
+            printf("Turn off light, high brightness level \n");
             leds_set(LEDS_NUM_TO_MASK(LEDS_RED));
-            inc_humidity = false;
-            dec_humidity = true;
         }else if (strcmp((const char *)chunk, "good")==0){
-            printf("Good humidity level!\n");
+            printf("Good brightness level!\n");
             leds_set(LEDS_NUM_TO_MASK(LEDS_GREEN));
-            inc_humidity = false;
-            dec_humidity = false;
         }else if(strcmp((const char *)chunk, "off")==0){
             printf("Manual handling on!\n");
             leds_set(LEDS_NUM_TO_MASK(LEDS_YELLOW));
-            inc_humidity = false;
-            dec_humidity = false;
         }else{
             printf("UNKNOWN COMMAND\n");
         }
@@ -162,7 +153,7 @@ mqtt_event(struct mqtt_connection *m, mqtt_event_t event, void *data)
             printf("MQTT Disconnect. Reason %u\n", *((mqtt_event_t *)data));
 
             state = STATE_DISCONNECTED;
-            process_poll(&mqtt_humidity_client_process);
+            process_poll(&mqtt_brightness_client_process);
             break;
         }
         case MQTT_EVENT_PUBLISH: {
@@ -213,35 +204,29 @@ have_connectivity(void)
 }
 
 static void
-update_humidity_level(void)
+simulate_brightness(void)
 {
-    //generate humidity level in a [1,10]
-    int random_variation = (rand() % 10) + 1;
+   double frequency = 0.1;
+   time_t currentTime;
+    struct tm *localTime;
 
-    if(inc_humidity) {
-        humidity_level += random_variation;
-        if(humidity_level > MAX_HUMIDITY)
-            humidity_level = MAX_HUMIDITY;
-    }
-    else if(dec_humidity) {
-        humidity_level -= random_variation;
-        if(humidity_level < MIN_HUMIDITY)
-            humidity_level = MIN_HUMIDITY;
-    }else{
-        humidity_level += ((rand() % 5) - 2) * 5; //variation in [-5,5] interval
-	if(humidity_level > MAX_HUMIDITY)
-	   humidity_level = MAX_HUMIDITY;
-	else if(humidity_level < MIN_HUMIDITY)
-           humidity_level = MIN_HUMIDITY;
-    }
+    time(&currentTime);
+    localTime = localtime(&currentTime);
 
+    // Translate and normalize the value of the sinusoidal function
+    double normalizedValue = 0.5 * sin(2 * M_PI * frequency * localTime->tm_hour / 24.0) + 0.5;
+
+    // Scale the value into the desired range (200-500)
+    double luxValue = 200.0 + normalizedValue * (500.0 - 200.0);
+
+    brightness_level = luxValue;
 }
 
 mqtt_status_t status;
 char broker_address[CONFIG_IP_ADDR_STR_LEN];
 
 /*---------------------------------------------------------------------------*/
-PROCESS_THREAD(mqtt_humidity_client_process, ev, data)
+PROCESS_THREAD(mqtt_brightness_client_process, ev, data)
 {
 button_hal_button_t* btn;
 PROCESS_BEGIN();
@@ -255,7 +240,7 @@ linkaddr_node_addr.u8[2], linkaddr_node_addr.u8[5],
 linkaddr_node_addr.u8[6], linkaddr_node_addr.u8[7]);
 
 // Broker registration
-mqtt_register(&conn, &mqtt_humidity_client_process, client_id, mqtt_event,
+mqtt_register(&conn, &mqtt_brightness_client_process, client_id, mqtt_event,
 MAX_TCP_SEGMENT_SIZE);
 printf("Registration done!\n");
 state=STATE_INIT;
@@ -291,8 +276,9 @@ while(1) {
 
         if(state==STATE_CONNECTED){
            //subscribe topic
-	    strcpy(sub_topic, "humidity_");
-            sprintf(sub_topic + strlen("humidity_"), "%d", node_id);
+	    int node = node_id;
+	    strcpy(sub_topic, "brightness_");
+            sprintf(sub_topic + strlen("brightness_"), "%d", node);
             status = mqtt_subscribe(&conn, NULL, sub_topic, MQTT_QOS_LEVEL_0);
 
             printf("Subscribing to topic %s\n", sub_topic);
@@ -307,13 +293,13 @@ while(1) {
 
         if(state == STATE_SUBSCRIBED){
 	    static char pub_topic[BUFFER_SIZE];
-            sprintf(pub_topic, "%s", "humidity_sample");
+            sprintf(pub_topic, "%s", "brightness_sample");
 
-            update_humidity_level();
+            simulate_brightness();
 
             PUBLISH_INTERVAL = DEFAULT_PUBLISH_INTERVAL;
 
-            sprintf(app_buffer, "{\"node\": %d, \"humidity\": %d, \"timestamp\": %lu, \"mode\": %d}", node_id, humidity_level, clock_seconds(), mode);
+            sprintf(app_buffer, "{\"node\": %d, \"brightness\": %d, \"timestamp\": %lu, \"mode\": %d}", node_id, brightness_level, clock_seconds(), mode);
             printf("%s\n", app_buffer);
             mqtt_publish(&conn, NULL, pub_topic, (uint8_t *)app_buffer,
             strlen(app_buffer), MQTT_QOS_LEVEL_0, MQTT_RETAIN_OFF);
