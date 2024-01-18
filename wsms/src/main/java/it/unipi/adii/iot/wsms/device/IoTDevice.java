@@ -115,9 +115,15 @@ public class IoTDevice {
 							logger.warn(dataType + " too low! (" + value + ")");
 							req.setURI("coap://[" + ip + "]/" + dataType + "_switch?color=b");
 							req.send();
+							req = new Request(Code.PUT);
+							req.setURI("coap://[" + ip + "]/" + dataType + "_sensor?recover=inc");
+							req.send();
 						} else if (value > getUpperBound(dataType)) {
 							logger.warn(dataType + " too high! (" + value + ")");
 							req.setURI("coap://[" + ip + "]/"+dataType+"_switch?color=r");
+							req.send();
+							req = new Request(Code.PUT);
+							req.setURI("coap://[" + ip + "]/" + dataType + "_sensor?recover=dec");
 							req.send();
 						} else {
 							logger.info(dataType + " at normal level. " + value + ")");

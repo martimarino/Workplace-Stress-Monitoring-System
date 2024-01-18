@@ -21,6 +21,9 @@ static int UPPER_BOUND_TEMP = 27;
 
 static int temperature = 22;
 
+bool inc_temp = false;
+bool dec_temp = false;
+
 /****************** REST: Temperature *********************/
 
 static void get_temperature_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
@@ -46,7 +49,8 @@ static void get_temperature_handler(coap_message_t *request, coap_message_t *res
     else if (temperature > UPPER_BOUND_TEMP)
     {
         LOG_WARN("Temperature is too high: (%d)\n", temperature);
-    } else {
+    } 
+	else {
 		LOG_INFO("Temperature is normal: (%d)\n", temperature);
 	}
 
@@ -73,36 +77,26 @@ static void put_temperature_handler(coap_message_t *request, coap_message_t *res
     }
 
     size_t len = 0;
-    const uint8_t* payload = NULL;
+    const char* recover = NULL;
     bool success = true;
 
-    // Extract and handle the payload of the PUT request
-    if ((len = coap_get_payload(request, &payload))) {
-        char* chunk = strtok((char*)payload, " ");
-        char* type = (char*)malloc((strlen(chunk)) * sizeof(char));
-        strcpy(type, chunk);
+    // Extract and handle the payload of the PUT request	
+	if((len = coap_get_query_variable(request, "recover", &recover))) 
+    {
+        LOG_INFO("recover mode %.*s\n", (int)len, recover);
 
-        chunk = strtok(NULL, " ");
-        int new_value = atoi(chunk);
-        printf("type: %s\n", type);
+        if(strncmp(recover, "inc_temp", len) == 0) 
+        {
+            inc_temp = true;
+        } else if(strncmp(recover, "dec_temp", len) == 0) 
+        {
+            dec_temp = true;
+        }  
+    } else  {
+		success = false;
+	}
 
-        // Update the upper or lower bound based on the specified type
-        if (strncmp(type, "u", 1) == 0) {
-            if (new_value < UPPER_BOUND_TEMP)
-                success = false;
-            else
-                UPPER_BOUND_TEMP = new_value;
-        } else {
-            if (new_value > LOWER_BOUND_TEMP)
-                success = false;
-            else
-                LOWER_BOUND_TEMP = new_value;
-        }
-
-        free(type);
-    }
-
-    printf("LB: %d, UB: %d\n", LOWER_BOUND_TEMP, UPPER_BOUND_TEMP);
+    printf("inc_temp: %b, dec_temp: %b\n", inc_temp, dec_temp);
 
     // If the modification of the upper or lower bound fails, set an error response status
     if (!success)
@@ -115,15 +109,28 @@ static void temperature_event_handler(void) {
     // Estimate a new temperature randomly
     srand(time(NULL));
     int new_temp = temperature;
-    int random = rand() % 8; // generates 0, 1, 2, 3, 4, 5, 6, 7
+	
+	if (inc_temp) {
+		new_temp += VARIATION;
+		if(new_temp > LOWER_BOUND_TEMP)
+			inc_temp = false;
+	} 
+	else if (dec_temp) {
+		new_temp -= VARIATION;
+		if(new_temp < UPPER_BOUND_TEMP)
+			dec_temp = false;
+	} 
+	else {	
+		int random = rand() % 8; // generates 0, 1, 2, 3, 4, 5, 6, 7
 
-    // Change the temperature with a certain probability
-    if (random < 3) {
-        if (random == 0) // decrease
-            new_temp -= VARIATION;
-        else // increase
-            new_temp += VARIATION;
-    }
+		// Change the temperature with a certain probability
+		if (random < 3) {
+			if (random == 0) // decrease
+				new_temp -= VARIATION;
+			else // increase
+				new_temp += VARIATION;
+		}
+	}
 
     // If the new temperature is different from the current temperature, update and notify observers
     if (new_temp != temperature) {

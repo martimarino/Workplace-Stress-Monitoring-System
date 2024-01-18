@@ -97,7 +97,7 @@ public class MQTT implements MqttCallback {
 				if(!th.checkSensorExistence(nodeId)) {
 					th.addSensor(nodeId, "humidity");
 				}
-				th.addObservation(nodeId, value, timestamp);
+				DBService.addObservation(nodeId, value, timestamp);
 				int lower = 30;
 				int upper = 60;
 				boolean on = false;
@@ -119,7 +119,6 @@ public class MQTT implements MqttCallback {
 						reply = "inc_h";
 						publish(pubTopic, reply, nodeId);
                     	logger.info("[CRITICAL] - "+nodeId+" - the humidity is too low.");
-                    	//th.updateSensorState(nodeId, (short)0);
 				}
 				 
 			}
@@ -130,7 +129,7 @@ public class MQTT implements MqttCallback {
 				if(!th.checkSensorExistence(nodeId)) {
 					th.addSensor(nodeId, "temperature");
 				}
-				th.addObservation(nodeId, value, timestamp);
+				DBService.addObservation(nodeId, value, timestamp);
 				int lower = 19;
 				int upper = 24;
 				boolean on = false;
