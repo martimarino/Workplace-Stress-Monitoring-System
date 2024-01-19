@@ -6,6 +6,7 @@
 #include "sys/etimer.h"
 #include "dev/leds.h"
 #include "os/dev/button-hal.h"
+#include "global_params.h"
 
 #include "node-id.h"
 #include "net/ipv6/simple-udp.h"
@@ -139,14 +140,8 @@ PROCESS_THREAD(temperature_server, ev, data)
         } 
 		if (ev == button_hal_press_event) {
 			btn = (button_hal_button_t *)data;
-			printf("Release event (%s)\n", BUTTON_HAL_GET_DESCRIPTION(btn));
-
-			// Sent a POST request to temperature_switch
-			coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
-			coap_set_header_uri_path(request, "/temperature_switch");
-
-			coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &server_ep);
-			COAP_BLOCKING_REQUEST(&server_ep, request, NULL);  // Ignore the response
+			LOG_INFO("Press event (%s)\n", BUTTON_HAL_GET_DESCRIPTION(btn));
+			isAuto = !isAuto;
 		}
     }
     

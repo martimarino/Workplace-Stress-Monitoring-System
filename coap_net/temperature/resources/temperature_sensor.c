@@ -80,26 +80,36 @@ static void put_temperature_handler(coap_message_t *request, coap_message_t *res
     }
 
     size_t len = 0;
-    const char* recover = NULL;
+    const uint8_t* payload = NULL;
     bool success = true;
 
-    // Extract and handle the payload of the PUT request	
-	if((len = coap_get_query_variable(request, "recover", &recover))) 
-    {
-        LOG_INFO("recover mode %.*s\n", (int)len, recover);
+    // Extract and handle the payload of the PUT request
+    if ((len = coap_get_payload(request, &payload))) {
+        char* chunk = strtok((char*)payload, " ");
+        char* type = (char*)malloc((strlen(chunk)) * sizeof(char));
+        strcpy(type, chunk);
 
-        if(strncmp(recover, "inc", len) == 0) 
-        {
-            inc_temp = true;
-        } else if(strncmp(recover, "dec", len) == 0) 
-        {
-            dec_temp = true;
-        }  
-    } else  {
-		success = false;
-	}
+        chunk = strtok(NULL, " ");
+        int new_value = atoi(chunk);
+        printf("type: %s\n", type);
 
-    printf("inc_temp: %b, dec_temp: %b\n", inc_temp, dec_temp);
+        // Update the upper or lower bound based on the specified type
+        if (strncmp(type, "u", 1) == 0) {
+            if (new_value < UPPER_BOUND_TEMP)
+                success = false;
+            else
+                UPPER_BOUND_TEMP = new_value;
+        } else {
+            if (new_value > LOWER_BOUND_TEMP)
+                success = false;
+            else
+                LOWER_BOUND_TEMP = new_value;
+        }
+
+        free(type);
+    }
+
+    printf("LB: %d, UB: %d\n", LOWER_BOUND_TEMP, UPPER_BOUND_TEMP);
 
     // If the modification of the upper or lower bound fails, set an error response status
     if (!success)
