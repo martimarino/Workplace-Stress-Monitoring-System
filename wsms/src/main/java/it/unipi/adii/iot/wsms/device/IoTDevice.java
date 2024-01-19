@@ -32,10 +32,11 @@ public class IoTDevice {
 	private static final DBService db_Service = DBService.getInstance();
 
 	private final String ip;
+	private String mode = "auto";
 	private CoapClient resSensor;
 	private CoapClient resSwitch;
 	private boolean stopObserve = false;
-	private short state = 0;
+
 
 
 	public static int getLowerBound(String dataType) {
@@ -78,6 +79,7 @@ public class IoTDevice {
 						int nodeId = 0;
 						long timestamp = 0;
 						int value = 0;
+						boolean isAuto = true;
 
 						boolean success = true;
 
@@ -90,6 +92,7 @@ public class IoTDevice {
 							nodeId = Integer.parseInt(sensorMessage.get("node_id").toString());
 							timestamp = Integer.parseInt(sensorMessage.get("timestamp").toString());
 							value = Integer.parseInt(sensorMessage.get("value").toString());
+							isAuto = Boolean.parseBoolean(sensorMessage.get("isAuto").toString());
 
 						} catch (ParseException pe) {
 							System.out.println(response.getResponseText());
@@ -110,20 +113,20 @@ public class IoTDevice {
 							return;
 
 						Request req = new Request(Code.POST);
+						String payload;
 
+						// request for warn message
 						if (value < getLowerBound(dataType)) {
 							logger.warn(dataType + " too low! (" + value + ")");
 							req.setURI("coap://[" + ip + "]/" + dataType + "_switch?color=b");
-							req.send();
-							req = new Request(Code.PUT);
-							req.setURI("coap://[" + ip + "]/" + dataType + "_sensor?recover=inc");
+							payload = "recover=inc";
+							req.setPayload(payload);
 							req.send();
 						} else if (value > getUpperBound(dataType)) {
 							logger.warn(dataType + " too high! (" + value + ")");
 							req.setURI("coap://[" + ip + "]/"+dataType+"_switch?color=r");
-							req.send();
-							req = new Request(Code.PUT);
-							req.setURI("coap://[" + ip + "]/" + dataType + "_sensor?recover=dec");
+							payload = "recover=dec";
+							req.setPayload(payload);
 							req.send();
 						} else {
 							logger.info(dataType + " at normal level. " + value + ")");
@@ -132,6 +135,16 @@ public class IoTDevice {
 						}
 						DBService.addObservation(ip, value, timestamp);
 
+						// request for mode changed
+						if(isAuto && mode.equals("man") ) {
+							logger.info(dataType + " mode changed to: " + mode);
+							req.setURI("coap://[" + ip + "]/" + dataType + "_switch?mode=auto");
+							req.send();
+						} else if (!isAuto && mode.equals("auto")) {
+							logger.info(dataType + " mode changed to: " + mode);
+							req.setURI("coap://[" + ip + "]/" + dataType + "_switch?mode=man");
+							req.send();
+						}
 					}
 					
 					public void onError() {

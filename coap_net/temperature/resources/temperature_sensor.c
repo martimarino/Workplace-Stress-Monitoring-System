@@ -12,7 +12,6 @@
 #define LOG_LEVEL LOG_LEVEL_APP
 
 /********************* RESOURCES **************************/
-#include "global_params.h"
 
 #define VARIATION 1
 
@@ -21,8 +20,12 @@ static int UPPER_BOUND_TEMP = 27;
 
 static int temperature = 22;
 
-bool inc_temp = false;
-bool dec_temp = false;
+#include "global_params.h"
+
+bool isAuto;
+
+bool inc_temp;
+bool dec_temp;
 
 /****************** REST: Temperature *********************/
 
@@ -55,7 +58,7 @@ static void get_temperature_handler(coap_message_t *request, coap_message_t *res
 	}
 
 	// Fill the buffer
-    snprintf((char *)buffer, COAP_MAX_CHUNK_SIZE, "{\"node_id\":%d,\"timestamp\":%lu,\"value\":%d}", node_id, clock_seconds(), temperature);
+    snprintf((char *)buffer, COAP_MAX_CHUNK_SIZE, "{\"node_id\":%d,\"timestamp\":%lu,\"value\":%d,\"isAuto\":%b}", node_id, clock_seconds(), temperature, isAuto);
 	int length = strlen((char*)buffer);
 
 	printf("%s\n", buffer);
@@ -85,10 +88,10 @@ static void put_temperature_handler(coap_message_t *request, coap_message_t *res
     {
         LOG_INFO("recover mode %.*s\n", (int)len, recover);
 
-        if(strncmp(recover, "inc_temp", len) == 0) 
+        if(strncmp(recover, "inc", len) == 0) 
         {
             inc_temp = true;
-        } else if(strncmp(recover, "dec_temp", len) == 0) 
+        } else if(strncmp(recover, "dec", len) == 0) 
         {
             dec_temp = true;
         }  
@@ -110,17 +113,18 @@ static void temperature_event_handler(void) {
     srand(time(NULL));
     int new_temp = temperature;
 	
-	if (inc_temp) {
-		new_temp += VARIATION;
-		if(new_temp > LOWER_BOUND_TEMP)
-			inc_temp = false;
-	} 
-	else if (dec_temp) {
-		new_temp -= VARIATION;
-		if(new_temp < UPPER_BOUND_TEMP)
-			dec_temp = false;
-	} 
-	else {	
+	if(isAuto) {
+		if (inc_temp) {
+			new_temp += VARIATION;
+			if(new_temp > LOWER_BOUND_TEMP)
+				inc_temp = false;
+		} 
+		else if (dec_temp) {
+			new_temp -= VARIATION;
+			if(new_temp < UPPER_BOUND_TEMP)
+				dec_temp = false;
+		} 
+	} else {	
 		int random = rand() % 8; // generates 0, 1, 2, 3, 4, 5, 6, 7
 
 		// Change the temperature with a certain probability
