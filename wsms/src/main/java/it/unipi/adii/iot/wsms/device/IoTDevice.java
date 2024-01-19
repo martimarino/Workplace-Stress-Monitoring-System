@@ -16,8 +16,6 @@ import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
 
-import java.util.Objects;
-
 
 public class IoTDevice {
 	private static final int LOWER_BOUND_TEMP = 19; // in °C
@@ -139,10 +137,12 @@ public class IoTDevice {
 						if(isAuto && mode.equals("man") ) {
 							logger.info(dataType + " mode changed to: " + mode);
 							req.setURI("coap://[" + ip + "]/" + dataType + "_switch?mode=auto");
+							mode = "auto";
 							req.send();
 						} else if (!isAuto && mode.equals("auto")) {
 							logger.info(dataType + " mode changed to: " + mode);
 							req.setURI("coap://[" + ip + "]/" + dataType + "_switch?mode=man");
+							mode = "man";
 							req.send();
 						}
 					}
