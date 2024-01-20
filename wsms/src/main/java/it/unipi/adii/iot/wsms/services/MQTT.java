@@ -104,7 +104,7 @@ public class MQTT implements MqttCallback {
 
 				if(mode == 1)
 				{
-					reply = "off_h";
+					reply = "off";
 					publish(pubTopic, reply, nodeId);
 					logger.info("[MANUAL MODE] - "+nodeId+" - the humidity is controlled manually");
 					System.out.println("[MANUAL MODE] - "+nodeId+" - the humidity is controlled manually");
@@ -142,7 +142,7 @@ public class MQTT implements MqttCallback {
 				String reply;
 				if(mode == 1)
 				{
-					reply = "off_h";
+					reply = "off";
 					publish(pubTopic, reply, nodeId);
 					logger.info("[MANUAL MODE] - "+nodeId+" - the brightness is controlled manually");
 					System.out.println("[MANUAL MODE] - "+nodeId+" - the brightness is controlled manually");

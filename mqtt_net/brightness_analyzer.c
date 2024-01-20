@@ -298,8 +298,8 @@ while(1) {
             simulate_brightness();
 
             PUBLISH_INTERVAL = DEFAULT_PUBLISH_INTERVAL;
-
-            sprintf(app_buffer, "{\"node\": %d, \"brightness\": %d, \"timestamp\": %lu, \"mode\": %d}", node_id, brightness_level, clock_seconds(), mode);
+	    time_t milliseconds = time(NULL);
+            sprintf(app_buffer, "{\"node\": %d, \"brightness\": %d, \"timestamp\": %lu, \"mode\": %d}", node_id, brightness_level, milliseconds, mode);
             printf("%s\n", app_buffer);
             mqtt_publish(&conn, NULL, pub_topic, (uint8_t *)app_buffer,
             strlen(app_buffer), MQTT_QOS_LEVEL_0, MQTT_RETAIN_OFF);
