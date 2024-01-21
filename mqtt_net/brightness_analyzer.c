@@ -99,7 +99,8 @@ PROCESS(mqtt_brightness_client_process, "Brightness MQTT Client");
 #define MIN_BRIGHTNESS 0
 #define MAX_BRIGHTNESS 100
 static int brightness_level = 400;
-static int mode = 0; //mode 0 = automatic mode, mode 1 = manual mode
+static int mode = 0; //mode 0 = light off, mode 1 = light on, mode = 2 manual mode
+static bool isOn = false;
 
 /*---------------------------------------------------------------------------*/
 static void
@@ -116,20 +117,24 @@ pub_handler(const char *topic, uint16_t topic_len, const uint8_t *chunk,
         printf("Received Actuator command\n");
         printf("%s\n", chunk);
         if(strcmp((const char *)chunk, "inc")==0){
-            printf("Turn on light, low brightness level \n");
-            leds_set(LEDS_NUM_TO_MASK(LEDS_RED));
+	    if(!isOn){
+		isOn = true;
+		mode = 1;
+            	printf("Turn on light, low brightness level \n");
+	    }
         }
         else if(strcmp((const char *)chunk, "dec")==0){
-            printf("Turn off light, high brightness level \n");
-            leds_set(LEDS_NUM_TO_MASK(LEDS_RED));
+	    if(isOn){
+		isOn = false;
+		mode = 0;
+		printf("Turn off light, high brightness level \n");
+	    }
         }else if (strcmp((const char *)chunk, "good")==0){
             printf("Good brightness level!\n");
-            leds_set(LEDS_NUM_TO_MASK(LEDS_GREEN));
         }else if(strcmp((const char *)chunk, "off")==0){
             printf("Manual handling on!\n");
-            leds_set(LEDS_NUM_TO_MASK(LEDS_YELLOW));
         }else{
-            printf("UNKNOWN COMMAND\n");
+            printf("Unknown command\n");
         }
 
         return;
@@ -206,7 +211,7 @@ have_connectivity(void)
 static void
 simulate_brightness(void)
 {
-   double frequency = 0.1;
+   double frequency = 1.0;
    time_t currentTime;
     struct tm *localTime;
 
@@ -316,7 +321,7 @@ while(1) {
 }
   if(ev == button_hal_press_event) {
 		btn = (button_hal_button_t *)data;
-		mode = (mode == 0)? 1 : 0;
+		mode = (mode != 2)? 2 : isOn;
 		printf("Press event (%s)\n",    BUTTON_HAL_GET_DESCRIPTION(btn));
 	    }
 }
