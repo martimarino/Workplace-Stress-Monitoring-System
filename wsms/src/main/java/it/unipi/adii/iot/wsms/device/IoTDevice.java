@@ -130,12 +130,7 @@ public class IoTDevice {
 							req.send();
 						} else if (value > getUpperBound(dataType)) {
 							recoverMode = true;
-							logger.warn(dataType + " too high! (" + value + ")");/*
-							String payload = "color=r";
-							Request req = new Request(Code.PUT);
-							req.setPayload(payload);
-							req.setURI("coap://[" + ip + "]/switch");
-							req.send();*/
+							logger.warn(dataType + " too high! (" + value + ")");
 							Request req = new Request(Code.PUT);
 							req.setURI("coap://[" + ip + "]/switch?color=r");
 							req.send();
