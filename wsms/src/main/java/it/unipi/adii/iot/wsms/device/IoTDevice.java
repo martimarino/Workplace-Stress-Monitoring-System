@@ -31,6 +31,8 @@ public class IoTDevice {
 
 	private final String ip;
 	private String mode = "auto";
+	boolean recoverMode = false;
+
 	private CoapClient resSensor;
 	private CoapClient resSwitch;
 	private boolean stopObserve = false;
@@ -63,13 +65,20 @@ public class IoTDevice {
 		}
 	}
 
-		
+
 	public IoTDevice(String ipAddress, String dataType) {
 
 		this.ip = ipAddress;
-		this.resSensor = new CoapClient("coap://[" + ipAddress + "]/"+dataType+"_sensor");
-		this.resSwitch = new CoapClient("coap://[" + ipAddress + "]/"+dataType+"_switch");
-		
+		this.resSensor = new CoapClient("coap://[" + ipAddress + "]/sensor");
+		this.resSwitch = new CoapClient("coap://[" + ipAddress + "]/switch");
+		/*
+		System.out.println("SENT");
+		String payload = "ON";
+    	Request req = new Request(Code.PUT);
+		req.setPayload(payload);
+    	req.setURI("coap://[" + ip + "]/switch");
+    	req.send();*/
+
 		CoapObserveRelation observeProperty = this.resSensor.observe(
 				new CoapHandler() {
 					public void onLoad(CoapResponse response) {
@@ -77,7 +86,7 @@ public class IoTDevice {
 						int nodeId = 0;
 						long timestamp = 0;
 						int value = 0;
-						boolean isAuto = true;
+						int isAuto = 1;
 
 						boolean success = true;
 
@@ -90,7 +99,7 @@ public class IoTDevice {
 							nodeId = Integer.parseInt(sensorMessage.get("node_id").toString());
 							timestamp = Integer.parseInt(sensorMessage.get("timestamp").toString());
 							value = Integer.parseInt(sensorMessage.get("value").toString());
-							isAuto = Boolean.parseBoolean(sensorMessage.get("isAuto").toString());
+							isAuto = Integer.parseInt(sensorMessage.get("isAuto").toString());
 
 						} catch (ParseException pe) {
 							System.out.println(response.getResponseText());
@@ -110,57 +119,71 @@ public class IoTDevice {
 						if(!success)
 							return;
 
-						Request req = new Request(Code.POST);
-						String payload;
+						System.out.println("Received: " + value);
 
 						// request for warn message
 						if (value < getLowerBound(dataType)) {
+							recoverMode = true;
 							logger.warn(dataType + " too low! (" + value + ")");
-							req.setURI("coap://[" + ip + "]/" + dataType + "_switch?color=b");
-							payload = "recover=inc";
+							String payload = "recover=inc";
+							Request req = new Request(Code.PUT);
 							req.setPayload(payload);
+							req.setURI("coap://[" + ip + "]/switch");
 							req.send();
 						} else if (value > getUpperBound(dataType)) {
+							recoverMode = true;
 							logger.warn(dataType + " too high! (" + value + ")");
-							req.setURI("coap://[" + ip + "]/"+dataType+"_switch?color=r");
-							payload = "recover=dec";
+							String payload = "recover=dec";
+							Request req = new Request(Code.PUT);
 							req.setPayload(payload);
+							req.setURI("coap://[" + ip + "]/switch");
 							req.send();
-						} else {
-							logger.info(dataType + " at normal level. " + value + ")");
-							req.setURI("coap://[" + ip + "]/" + dataType + "_switch?color=g");
+
+						} else if (recoverMode) {
+							recoverMode = false;
+							logger.info(dataType + " at normal level. (" + value + ")");
+							String payload = "color=g";
+							Request req = new Request(Code.PUT);
+							req.setPayload(payload);
+							req.setURI("coap://[" + ip + "]/switch");
 							req.send();
 						}
 						DBService.addObservation(ip, value, timestamp);
 
 						// request for mode changed
-						if(isAuto && mode.equals("man") ) {
+						if(isAuto == 1 && mode.equals("man") ) {
 							logger.info(dataType + " mode changed to: " + mode);
-							req.setURI("coap://[" + ip + "]/" + dataType + "_switch?mode=auto");
+							String payload = "mode=auto";
+							Request req = new Request(Code.PUT);
+							req.setPayload(payload);
+							req.setURI("coap://[" + ip + "]/switch");
 							mode = "auto";
 							req.send();
-						} else if (!isAuto && mode.equals("auto")) {
+						} else if (isAuto == 0 && mode.equals("auto")) {
 							logger.info(dataType + " mode changed to: " + mode);
-							req.setURI("coap://[" + ip + "]/" + dataType + "_switch?mode=man");
+							String payload = "mode=man";
+							Request req = new Request(Code.PUT);
+							req.setPayload(payload);
+							req.setURI("coap://[" + ip + "]/switch");
 							mode = "man";
 							req.send();
 						}
 					}
-					
+
 					public void onError() {
 						stopObserve = true;
 //						logger.error("OBSERVING FAILED with " + dataType + " sensor " + ip);
-						
-						if(ResourceRegistration.removeDevice(ip)) {
+
+						if (ResourceRegistration.removeDevice(ip)) {
 							db_Service.deleteSensor(ip, dataType);
-							logger.error("OBSERVING FAILED with " + dataType + " sensor " + ip);
+							logger.error("OBSERVING FAILED with {} sensor {}", dataType, ip);
 						} else {
-							logger.error("The sensor " + ip + " is not registered");
+							logger.error("The sensor {} is not registered", ip);
 						}
-                    
+
 					}
 				}, MediaTypeRegistry.APPLICATION_JSON);
-		
+
 		if (stopObserve) {
 			observeProperty.proactiveCancel();
 		}

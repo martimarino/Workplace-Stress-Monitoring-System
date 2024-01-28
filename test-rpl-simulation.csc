@@ -2,7 +2,7 @@
 <simconf version="2023090101">
   <simulation>
     <title>My simulation</title>
-    <speedlimit>2.0</speedlimit>
+    <speedlimit>1.0</speedlimit>
     <randomseed>123456</randomseed>
     <motedelay_us>1000000</motedelay_us>
     <radiomedium>
@@ -17,7 +17,7 @@
     </events>
     <motetype>
       org.contikios.cooja.contikimote.ContikiMoteType
-      <description>BR</description>
+      <description>Cooja Mote Type #1</description>
       <source>[CONFIG_DIR]/coap_net/rpl-border-router/border-router.c</source>
       <commands>$(MAKE) -j$(CPUS) border-router.cooja TARGET=cooja</commands>
       <moteinterface>org.contikios.cooja.interfaces.Position</moteinterface>
@@ -39,7 +39,7 @@
       <mote>
         <interface_config>
           org.contikios.cooja.interfaces.Position
-          <pos x="69.01833768594328" y="64.65971694921674" />
+          <pos x="55.63706258809169" y="32.34084552722272" />
         </interface_config>
         <interface_config>
           org.contikios.cooja.contikimote.interfaces.ContikiMoteID
@@ -50,8 +50,8 @@
     <motetype>
       org.contikios.cooja.contikimote.ContikiMoteType
       <description>Cooja Mote Type #2</description>
-      <source>[CONFIG_DIR]/coap_net/temperature/temperature_server.c</source>
-      <commands>$(MAKE) -j$(CPUS) temperature_server.cooja TARGET=cooja</commands>
+      <source>[CONFIG_DIR]/coap_net/temperature/temperature-server.c</source>
+      <commands>$(MAKE) -j$(CPUS) temperature-server.cooja TARGET=cooja</commands>
       <moteinterface>org.contikios.cooja.interfaces.Position</moteinterface>
       <moteinterface>org.contikios.cooja.interfaces.Battery</moteinterface>
       <moteinterface>org.contikios.cooja.contikimote.interfaces.ContikiVib</moteinterface>
@@ -71,7 +71,7 @@
       <mote>
         <interface_config>
           org.contikios.cooja.interfaces.Position
-          <pos x="96.41624042684268" y="84.71306593541982" />
+          <pos x="37.969147625475244" y="50.116170463677626" />
         </interface_config>
         <interface_config>
           org.contikios.cooja.contikimote.interfaces.ContikiMoteID
@@ -88,9 +88,9 @@
       <skin>org.contikios.cooja.plugins.skins.GridVisualizerSkin</skin>
       <skin>org.contikios.cooja.plugins.skins.TrafficVisualizerSkin</skin>
       <skin>org.contikios.cooja.plugins.skins.UDGMVisualizerSkin</skin>
-      <viewport>1.7347158158669707 0.0 0.0 1.7347158158669707 51.35036543636403 7.139874596288169</viewport>
+      <viewport>2.918300875464653 0.0 0.0 2.918300875464653 15.243303843026924 14.521990521404563</viewport>
     </plugin_config>
-    <bounds x="1" y="1" height="400" width="400" z="1" />
+    <bounds x="0" y="1" height="400" width="401" />
   </plugin>
   <plugin>
     org.contikios.cooja.plugins.LogListener
@@ -99,7 +99,7 @@
       <formatted_time />
       <coloring />
     </plugin_config>
-    <bounds x="400" y="160" height="240" width="533" />
+    <bounds x="400" y="160" height="240" width="533" z="1" />
   </plugin>
   <plugin>
     org.contikios.cooja.plugins.TimeLine
@@ -111,7 +111,7 @@
       <showLEDs />
       <zoomfactor>500.0</zoomfactor>
     </plugin_config>
-    <bounds x="0" y="332" height="166" width="933" z="3" />
+    <bounds x="0" y="396" height="101" width="933" z="3" />
   </plugin>
   <plugin>
     org.contikios.cooja.serialsocket.SerialSocketServer
@@ -120,6 +120,6 @@
       <port>60001</port>
       <bound>true</bound>
     </plugin_config>
-    <bounds x="488" y="20" height="116" width="362" z="2" />
+    <bounds x="461" y="30" height="116" width="362" z="2" />
   </plugin>
 </simconf>

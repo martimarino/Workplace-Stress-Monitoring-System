@@ -1,3 +1,3 @@
-extern bool isAuto = true;
-extern bool inc_temp = false;
-extern bool dec_temp = false;
+extern bool isAuto;
+extern bool inc_temp;
+extern bool dec_temp;
