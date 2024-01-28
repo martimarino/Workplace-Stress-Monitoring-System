@@ -125,27 +125,26 @@ public class IoTDevice {
 						if (value < getLowerBound(dataType)) {
 							recoverMode = true;
 							logger.warn(dataType + " too low! (" + value + ")");
-							String payload = "recover=inc";
 							Request req = new Request(Code.PUT);
-							req.setPayload(payload);
-							req.setURI("coap://[" + ip + "]/switch");
+							req.setURI("coap://[" + ip + "]/switch?color=b");
 							req.send();
 						} else if (value > getUpperBound(dataType)) {
 							recoverMode = true;
-							logger.warn(dataType + " too high! (" + value + ")");
-							String payload = "recover=dec";
+							logger.warn(dataType + " too high! (" + value + ")");/*
+							String payload = "color=r";
 							Request req = new Request(Code.PUT);
 							req.setPayload(payload);
 							req.setURI("coap://[" + ip + "]/switch");
+							req.send();*/
+							Request req = new Request(Code.PUT);
+							req.setURI("coap://[" + ip + "]/switch?color=r");
 							req.send();
 
 						} else if (recoverMode) {
 							recoverMode = false;
 							logger.info(dataType + " at normal level. (" + value + ")");
-							String payload = "color=g";
 							Request req = new Request(Code.PUT);
-							req.setPayload(payload);
-							req.setURI("coap://[" + ip + "]/switch");
+							req.setURI("coap://[" + ip + "]/switch?color=g");
 							req.send();
 						}
 						DBService.addObservation(ip, value, timestamp);
