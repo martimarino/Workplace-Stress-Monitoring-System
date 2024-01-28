@@ -36,10 +36,10 @@ static const char *broker_ip = MQTT_CLIENT_BROKER_IP_ADDR;
 
 // Defaukt config values
 #define DEFAULT_BROKER_PORT         1883
-#define DEFAULT_PUBLISH_INTERVAL    (30 * CLOCK_SECOND)
+#define DEFAULT_PUBLISH_INTERVAL    (40 * CLOCK_SECOND)
 #define LOWER_BOUND_HUM             30
 #define UPPER_BOUND_HUM             60
-#define VARIATION                   1
+#define VARIATION                   1o
 
 static long PUBLISH_INTERVAL = DEFAULT_PUBLISH_INTERVAL;
 
@@ -118,23 +118,23 @@ pub_handler(const char *topic, uint16_t topic_len, const uint8_t *chunk,
         printf("%s\n", chunk);
         if(strcmp((const char *)chunk, "inc")==0){
             printf("Turn on humidifier, high humidity level \n");
-            leds_set(LEDS_NUM_TO_MASK(LEDS_RED));
+            leds_set(8);
             inc_humidity = true;
             dec_humidity = false;
         }
         else if(strcmp((const char *)chunk, "dec")==0){
             printf("Turn on dehumidifier, low humidity level \n");
-            leds_set(LEDS_NUM_TO_MASK(LEDS_RED));
+            leds_set(8);
             inc_humidity = false;
             dec_humidity = true;
         }else if (strcmp((const char *)chunk, "good")==0){
             printf("Good humidity level!\n");
-            leds_set(LEDS_NUM_TO_MASK(LEDS_GREEN));
+            leds_set(4);
             inc_humidity = false;
             dec_humidity = false;
         }else if(strcmp((const char *)chunk, "off")==0){
             printf("Manual handling on!\n");
-            leds_set(LEDS_NUM_TO_MASK(LEDS_YELLOW));
+            leds_set(12);
             inc_humidity = false;
             dec_humidity = false;
         }else{
@@ -228,7 +228,7 @@ update_humidity_level(void)
         if(humidity_level < MIN_HUMIDITY)
             humidity_level = MIN_HUMIDITY;
     }else{
-        humidity_level += ((rand() % 5) - 2) * 5; //variation in [-5,5] interval
+        humidity_level += (rand() % (5)) - 2; //variation in [-2,2] interval
 	if(humidity_level > MAX_HUMIDITY)
 	   humidity_level = MAX_HUMIDITY;
 	else if(humidity_level < MIN_HUMIDITY)
@@ -311,9 +311,8 @@ while(1) {
 
             update_humidity_level();
 
-            PUBLISH_INTERVAL = DEFAULT_PUBLISH_INTERVAL;
-
-            sprintf(app_buffer, "{\"node\": %d, \"humidity\": %d, \"timestamp\": %lu, \"mode\": %d}", node_id, humidity_level, clock_seconds(), mode);
+	    time_t milliseconds = time(NULL);
+            sprintf(app_buffer, "{\"node\": %d, \"humidity\": %d, \"timestamp\": %lu, \"mode\": %d}", node_id, humidity_level, milliseconds, mode);
             printf("%s\n", app_buffer);
             mqtt_publish(&conn, NULL, pub_topic, (uint8_t *)app_buffer,
             strlen(app_buffer), MQTT_QOS_LEVEL_0, MQTT_RETAIN_OFF);
@@ -331,7 +330,7 @@ while(1) {
   if(ev == button_hal_press_event) {
 		btn = (button_hal_button_t *)data;
 		mode = (mode == 0)? 1 : 0;
-		printf("Press event (%s)\n",    BUTTON_HAL_GET_DESCRIPTION(btn));
+		printf("Press event (%s)\n", BUTTON_HAL_GET_DESCRIPTION(btn));
 	    }
 }
 

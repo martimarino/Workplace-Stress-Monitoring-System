@@ -20,6 +20,7 @@ public class MQTT implements MqttCallback {
 	private static String subTopic1 = "brightness_sample";
 	private static String pubTopic = "humidity";
 	private static String pubTopic1 = "brightness";
+	private static int lux = 100;
 	private static MqttClient mqttClient = null;
 	private static final Logger logger = LogManager.getLogger(MQTT.class);
 	private static final DBService th = DBService.getInstance();
@@ -104,7 +105,7 @@ public class MQTT implements MqttCallback {
 
 				if(mode == 1)
 				{
-					reply = "off_h";
+					reply = "off";
 					publish(pubTopic, reply, nodeId);
 					logger.info("[MANUAL MODE] - "+nodeId+" - the humidity is controlled manually");
 					System.out.println("[MANUAL MODE] - "+nodeId+" - the humidity is controlled manually");
@@ -140,18 +141,18 @@ public class MQTT implements MqttCallback {
 				int upper = 400;
 				boolean on = false;
 				String reply;
-				if(mode == 1)
+				if(mode == 2)
 				{
-					reply = "off_h";
+					reply = "off";
 					publish(pubTopic, reply, nodeId);
 					logger.info("[MANUAL MODE] - "+nodeId+" - the brightness is controlled manually");
 					System.out.println("[MANUAL MODE] - "+nodeId+" - the brightness is controlled manually");
 				}
-				else if (value > lower && value <= upper) {
+				else if (value +(mode*lux) > lower && value +  (mode*lux) <= upper) {
 					reply = "good";
 					publish(pubTopic1, reply, nodeId);
 					logger.info("[NORMAL] - "+nodeId+" - the brightness is comfortable!");
-				} else if(value > upper)
+				} else if(value + (mode*lux) > upper)
 				{
 					reply = "dec";
 					publish(pubTopic1, reply, nodeId);
