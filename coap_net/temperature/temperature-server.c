@@ -156,8 +156,6 @@ PROCESS_THREAD(temperature_server, ev, data)
 			btn = (button_hal_button_t *)data;
 			LOG_INFO("Press event (%s)\n", BUTTON_HAL_GET_DESCRIPTION(btn));
 			isAuto = !isAuto;
-			incTemp = false;
-			decTemp = false;
 		}
     }
     

@@ -53,7 +53,8 @@ static void get_temperature_handler(coap_message_t *request, coap_message_t *res
 	}
 
 	// Fill the buffer
-    snprintf((char *)buffer, COAP_MAX_CHUNK_SIZE, "{\"node_id\":%d,\"timestamp\":%lu,\"value\":%d,\"isAuto\":%d}", node_id, clock_seconds(), temperature, isAuto);
+	time_t milliseconds = time(NULL);
+    snprintf((char *)buffer, COAP_MAX_CHUNK_SIZE, "{\"node_id\":%d,\"timestamp\":%lu,\"value\":%d,\"isAuto\":%d}", node_id, milliseconds, temperature, isAuto);
 	int length = strlen((char*)buffer);
 
 	printf("%s\n", buffer);
@@ -148,3 +149,4 @@ static void temperature_event_handler(void) {
         coap_notify_observers(&temperature_sensor);
     }
 }
+

@@ -20,11 +20,15 @@ import org.json.simple.parser.ParseException;
 public class IoTDevice {
 	private static final int LOWER_BOUND_TEMP = 19; // in °C
 	private static final int UPPER_BOUND_TEMP = 27; // in °C
+	private static final int COMFORT_TEMP = 22;		// in °C
+	
 	private static final int LOWER_BOUND_HUM = 30; // in %
 	private static final int UPPER_BOUND_HUM = 60; // in %
+	private static final int COMFORT_HUM = 40;	   // in %
 
 	private static final int LOWER_BOUND_NOISE = 10; // in dB
 	private static final int UPPER_BOUND_NOISE = 60; // in dB
+	private static final int COMFORT_NOISE = 30;	 // in dB
 
 	private static final Logger logger = LogManager.getLogger(IoTDevice.class);
 	private static final DBService db_Service = DBService.getInstance();
@@ -64,6 +68,19 @@ public class IoTDevice {
 				return -1;
 		}
 	}
+	
+	public static int getComfortValue(String dataType) {
+		switch (dataType) {
+			case "temperature":
+				return COMFORT_TEMP;
+			case "humidity":
+				return COMFORT_HUM;
+			case "noise":
+				return COMFORT_NOISE;
+			default:
+				return -1;
+		}
+	}
 
 
 	public IoTDevice(String ipAddress, String dataType) {
@@ -71,13 +88,6 @@ public class IoTDevice {
 		this.ip = ipAddress;
 		this.resSensor = new CoapClient("coap://[" + ipAddress + "]/sensor");
 		this.resSwitch = new CoapClient("coap://[" + ipAddress + "]/switch");
-		/*
-		System.out.println("SENT");
-		String payload = "ON";
-    	Request req = new Request(Code.PUT);
-		req.setPayload(payload);
-    	req.setURI("coap://[" + ip + "]/switch");
-    	req.send();*/
 
 		CoapObserveRelation observeProperty = this.resSensor.observe(
 				new CoapHandler() {
@@ -122,25 +132,28 @@ public class IoTDevice {
 						System.out.println("Received: " + value);
 
 						// request for warn message
-						if (value < getLowerBound(dataType)) {
+						if (value < getLowerBound(dataType) && !recoverMode) {
 							recoverMode = true;
 							logger.warn(dataType + " too low! (" + value + ")");
 							Request req = new Request(Code.PUT);
 							req.setURI("coap://[" + ip + "]/switch?color=b");
 							req.send();
-						} else if (value > getUpperBound(dataType)) {
+							System.out.println("Sent PUT color b to switch");
+
+						} else if (value > getUpperBound(dataType) && !recoverMode) {
 							recoverMode = true;
 							logger.warn(dataType + " too high! (" + value + ")");
 							Request req = new Request(Code.PUT);
 							req.setURI("coap://[" + ip + "]/switch?color=r");
 							req.send();
-
-						} else if (recoverMode) {
+							System.out.println("Sent PUT color r to switch");
+						} else if (recoverMode && value == getComfortValue(dataType)) {
 							recoverMode = false;
 							logger.info(dataType + " at normal level. (" + value + ")");
 							Request req = new Request(Code.PUT);
 							req.setURI("coap://[" + ip + "]/switch?color=g");
 							req.send();
+							System.out.println("Sent PUT color g to switch");
 						}
 						DBService.addObservation(ip, value, timestamp);
 
@@ -153,6 +166,7 @@ public class IoTDevice {
 							req.setURI("coap://[" + ip + "]/switch");
 							mode = "auto";
 							req.send();
+							System.out.println("Sent PUT mode auto to switch");
 						} else if (isAuto == 0 && mode.equals("auto")) {
 							logger.info(dataType + " mode changed to: " + mode);
 							String payload = "mode=man";
@@ -161,12 +175,13 @@ public class IoTDevice {
 							req.setURI("coap://[" + ip + "]/switch");
 							mode = "man";
 							req.send();
+							System.out.println("Sent PUT mode man to switch");
 						}
 					}
 
 					public void onError() {
 						stopObserve = true;
-//						logger.error("OBSERVING FAILED with " + dataType + " sensor " + ip);
+						logger.error("OBSERVING FAILED with " + dataType + " sensor " + ip);
 
 						if (ResourceRegistration.removeDevice(ip)) {
 							db_Service.deleteSensor(ip, dataType);
