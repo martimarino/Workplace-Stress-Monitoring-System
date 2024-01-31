@@ -108,23 +108,19 @@ pub_handler(const char *topic, uint16_t topic_len, const uint8_t *chunk,
             uint16_t chunk_len)
 {
     char message[64];
-    printf("Pub Handler: topic='%s' (len=%u), chunk_len=%u\n", topic,
-           topic_len, chunk_len);
     strcpy(message, "humidity_");
     sprintf(message + strlen("humidity_"), "%d", node_id);
 
     if(strcmp(topic, message) == 0) {
-        printf("Received Actuator command\n");
-        printf("%s\n", chunk);
         if(strcmp((const char *)chunk, "inc")==0){
             printf("Turn on humidifier, high humidity level \n");
-            leds_set(8);
+            leds_set(2);
             inc_humidity = true;
             dec_humidity = false;
         }
         else if(strcmp((const char *)chunk, "dec")==0){
             printf("Turn on dehumidifier, low humidity level \n");
-            leds_set(8);
+            leds_set(2);
             inc_humidity = false;
             dec_humidity = true;
         }else if (strcmp((const char *)chunk, "good")==0){
@@ -134,7 +130,7 @@ pub_handler(const char *topic, uint16_t topic_len, const uint8_t *chunk,
             dec_humidity = false;
         }else if(strcmp((const char *)chunk, "off")==0){
             printf("Manual handling on!\n");
-            leds_set(12);
+            leds_set(6);
             inc_humidity = false;
             dec_humidity = false;
         }else{
@@ -270,7 +266,7 @@ while(1) {
 
     if((ev == PROCESS_EVENT_TIMER && data == &periodic_timer) ||
     ev == PROCESS_EVENT_POLL){
-	printf("State %d\n", state);
+	//printf("State %d\n", state);
 
         if(state==STATE_INIT){
             if(have_connectivity()==true)
@@ -280,7 +276,6 @@ while(1) {
         if(state == STATE_NET_OK){
             // Connect to MQTT server
             printf("Connecting to MQTT server!\n");
-            //leds_set(LEDS_NUM_TO_MASK(LEDS_YELLOW));
             memcpy(broker_address, broker_ip, strlen(broker_ip));
 
             mqtt_connect(&conn, broker_address, DEFAULT_BROKER_PORT,
@@ -295,7 +290,7 @@ while(1) {
             sprintf(sub_topic + strlen("humidity_"), "%d", node_id);
             status = mqtt_subscribe(&conn, NULL, sub_topic, MQTT_QOS_LEVEL_0);
 
-            printf("Subscribing to topic %s\n", sub_topic);
+            //printf("Subscribing to topic %s\n", sub_topic);
             if(status == MQTT_STATUS_OUT_QUEUE_FULL) {
                 LOG_ERR("Tried to subscribe but command queue was full!\n");
                 PROCESS_EXIT();
@@ -311,9 +306,8 @@ while(1) {
 
             update_humidity_level();
 
-	    time_t milliseconds = time(NULL);
-            sprintf(app_buffer, "{\"node\": %d, \"humidity\": %d, \"timestamp\": %lu, \"mode\": %d}", node_id, humidity_level, milliseconds, mode);
-            printf("%s\n", app_buffer);
+            sprintf(app_buffer, "{\"node\": %d, \"humidity\": %d, \"mode\": %d}", node_id, humidity_level, seconds, mode);
+            //printf("%s\n", app_buffer);
             mqtt_publish(&conn, NULL, pub_topic, (uint8_t *)app_buffer,
             strlen(app_buffer), MQTT_QOS_LEVEL_0, MQTT_RETAIN_OFF);
 
@@ -330,7 +324,7 @@ while(1) {
   if(ev == button_hal_press_event) {
 		btn = (button_hal_button_t *)data;
 		mode = (mode == 0)? 1 : 0;
-		printf("Press event (%s)\n", BUTTON_HAL_GET_DESCRIPTION(btn));
+		//printf("Button pressed (%s)\n", BUTTON_HAL_GET_DESCRIPTION(btn));
 	    }
 }
 

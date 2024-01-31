@@ -108,14 +108,10 @@ pub_handler(const char *topic, uint16_t topic_len, const uint8_t *chunk,
             uint16_t chunk_len)
 {
     char message[64];
-    printf("Pub Handler: topic='%s' (len=%u), chunk_len=%u\n", topic,
-           topic_len, chunk_len);
     strcpy(message, "brightness_");
     sprintf(message + strlen("brightness_"), "%d", node_id);
 
     if(strcmp(topic, message) == 0) {
-        printf("Received Actuator command\n");
-        printf("%s\n", chunk);
         if(strcmp((const char *)chunk, "inc")==0){
 	    if(!isOn){
 		isOn = true;
@@ -125,8 +121,8 @@ pub_handler(const char *topic, uint16_t topic_len, const uint8_t *chunk,
         }
         else if(strcmp((const char *)chunk, "dec")==0){
 	    if(isOn){
-		isOn = false;
-		mode = 0;
+		isOn = false; 
+		mode = 0;           
 		printf("Turn off light, high brightness level \n");
 	    }
         }else if (strcmp((const char *)chunk, "good")==0){
@@ -212,14 +208,10 @@ static void
 simulate_brightness(void)
 {
    double frequency = 1.0;
-   time_t currentTime;
-    struct tm *localTime;
-
-    time(&currentTime);
-    localTime = localtime(&currentTime);
+   int time = 10 + CLOCK_SECOND; 
 
     // Translate and normalize the value of the sinusoidal function
-    double normalizedValue = 0.5 * sin(2 * M_PI * frequency * localTime->tm_hour / 24.0) + 0.5;
+    double normalizedValue = 0.5 * sin(2 * 3.14 * frequency * time / 24.0) + 0.5;
 
     // Scale the value into the desired range (200-500)
     double luxValue = 200.0 + normalizedValue * (500.0 - 200.0);
@@ -260,7 +252,7 @@ while(1) {
 
     if((ev == PROCESS_EVENT_TIMER && data == &periodic_timer) ||
     ev == PROCESS_EVENT_POLL){
-	printf("State %d\n", state);
+	//printf("State %d\n", state);
 
         if(state==STATE_INIT){
             if(have_connectivity()==true)
@@ -270,7 +262,6 @@ while(1) {
         if(state == STATE_NET_OK){
             // Connect to MQTT server
             printf("Connecting to MQTT server!\n");
-            //leds_set(LEDS_NUM_TO_MASK(LEDS_YELLOW));
             memcpy(broker_address, broker_ip, strlen(broker_ip));
 
             mqtt_connect(&conn, broker_address, DEFAULT_BROKER_PORT,
@@ -286,7 +277,7 @@ while(1) {
             sprintf(sub_topic + strlen("brightness_"), "%d", node);
             status = mqtt_subscribe(&conn, NULL, sub_topic, MQTT_QOS_LEVEL_0);
 
-            printf("Subscribing to topic %s\n", sub_topic);
+            //printf("Subscribing to topic %s\n", sub_topic);
             if(status == MQTT_STATUS_OUT_QUEUE_FULL) {
                 LOG_ERR("Tried to subscribe but command queue was full!\n");
                 PROCESS_EXIT();
@@ -303,9 +294,9 @@ while(1) {
             simulate_brightness();
 
             PUBLISH_INTERVAL = DEFAULT_PUBLISH_INTERVAL;
-	    time_t milliseconds = time(NULL);
-            sprintf(app_buffer, "{\"node\": %d, \"brightness\": %d, \"timestamp\": %lu, \"mode\": %d}", node_id, brightness_level, milliseconds, mode);
-            printf("%s\n", app_buffer);
+	    //time_t seconds = time(NULL);
+            sprintf(app_buffer, "{\"node\": %d, \"brightness\": %d, \"mode\": %d}", node_id, brightness_level, mode);
+            //printf("%s\n", app_buffer);
             mqtt_publish(&conn, NULL, pub_topic, (uint8_t *)app_buffer,
             strlen(app_buffer), MQTT_QOS_LEVEL_0, MQTT_RETAIN_OFF);
 
@@ -322,7 +313,7 @@ while(1) {
   if(ev == button_hal_press_event) {
 		btn = (button_hal_button_t *)data;
 		mode = (mode != 2)? 2 : isOn;
-		printf("Press event (%s)\n",    BUTTON_HAL_GET_DESCRIPTION(btn));
+		//LOG_INFO("Button pressed (%s)\n",    BUTTON_HAL_GET_DESCRIPTION(btn));
 	    }
 }
 

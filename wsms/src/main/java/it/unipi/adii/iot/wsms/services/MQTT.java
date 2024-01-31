@@ -90,7 +90,6 @@ public class MQTT implements MqttCallback {
 			JSONObject sensorMessage = (JSONObject) JSONValue.parseWithException(new String(payload));
 			System.out.println("message parsed");
 			if (sensorMessage.containsKey("humidity")) {
-				long timestamp = Long.parseLong(sensorMessage.get("timestamp").toString());
 				Integer value = Integer.parseInt(sensorMessage.get("humidity").toString());
 				String nodeId = sensorMessage.get("node").toString();
 				Integer mode = Integer.parseInt(sensorMessage.get("mode").toString());
@@ -129,7 +128,6 @@ public class MQTT implements MqttCallback {
 
 			}
 			if (sensorMessage.containsKey("brightness")) {
-				long timestamp = Long.parseLong(sensorMessage.get("timestamp").toString());
 				Integer value = Integer.parseInt(sensorMessage.get("brightness").toString());
 				String nodeId = sensorMessage.get("node").toString();
 				Integer mode = Integer.parseInt(sensorMessage.get("mode").toString());
