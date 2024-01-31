@@ -5,6 +5,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.*;
+import java.util.Date;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -130,7 +131,8 @@ public final class DBService {
 		return success;
 	}
 
-	public static boolean addObservation(String nodeId, int value, long timestamp) {
+	public static boolean addObservation(String nodeId, int value) {
+
 		String query = "INSERT INTO observation (sensor, value, timestamp) VALUES (?, ?, ?);";
 		boolean success = true;
 		getConnection();
@@ -138,7 +140,8 @@ public final class DBService {
 		{
 			ps.setString(1, nodeId);
 			ps.setInt(2, value);
-			Timestamp ts = new Timestamp(timestamp*1000);
+			Date actualDate = new Date();
+			Timestamp ts = new Timestamp(actualDate.getTime());
 			ps.setTimestamp(3, ts);
 			int insertedRow = ps.executeUpdate();
 			if(insertedRow < 1) {

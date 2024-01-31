@@ -35,12 +35,11 @@ public class IoTDevice {
 
 	private final String ip;
 	private String mode = "auto";
-	boolean recoverMode = false;
+	int recoverLevel = 0;
 
 	private CoapClient resSensor;
 	private CoapClient resSwitch;
 	private boolean stopObserve = false;
-
 
 
 	public static int getLowerBound(String dataType) {
@@ -94,7 +93,6 @@ public class IoTDevice {
 					public void onLoad(CoapResponse response) {
 
 						int nodeId = 0;
-						long timestamp = 0;
 						int value = 0;
 						int isAuto = 1;
 
@@ -107,7 +105,6 @@ public class IoTDevice {
 							JSONObject sensorMessage = (JSONObject) JSONValue.parseWithException(new String(response.getPayload()));
 
 							nodeId = Integer.parseInt(sensorMessage.get("node_id").toString());
-							timestamp = Integer.parseInt(sensorMessage.get("timestamp").toString());
 							value = Integer.parseInt(sensorMessage.get("value").toString());
 							isAuto = Integer.parseInt(sensorMessage.get("isAuto").toString());
 
@@ -118,7 +115,7 @@ public class IoTDevice {
 						}
 
 						if(ip.endsWith(Integer.toString(nodeId))) {
-							if(!DBService.addObservation(ip, value, timestamp)) {
+							if(!DBService.addObservation(ip, value)) {
 								logger.warn("Impossible to add new observation!");
 								success = false;
 							}
@@ -132,30 +129,30 @@ public class IoTDevice {
 						System.out.println("Received: " + value);
 
 						// request for warn message
-						if (value < getLowerBound(dataType) && !recoverMode) {
-							recoverMode = true;
+						if (value < getLowerBound(dataType) && recoverLevel != 0) {
+							recoverLevel = 1;
 							logger.warn(dataType + " too low! (" + value + ")");
 							Request req = new Request(Code.PUT);
 							req.setURI("coap://[" + ip + "]/switch?color=b");
 							req.send();
 							System.out.println("Sent PUT color b to switch");
 
-						} else if (value > getUpperBound(dataType) && !recoverMode) {
-							recoverMode = true;
+						} else if (value > getUpperBound(dataType) && recoverLevel != 0) {
+							recoverLevel = -1;
 							logger.warn(dataType + " too high! (" + value + ")");
 							Request req = new Request(Code.PUT);
 							req.setURI("coap://[" + ip + "]/switch?color=r");
 							req.send();
 							System.out.println("Sent PUT color r to switch");
-						} else if (recoverMode && value == getComfortValue(dataType)) {
-							recoverMode = false;
+						} else if (recoverLevel != 0 && value == getComfortValue(dataType)) {
+							recoverLevel = 0;
 							logger.info(dataType + " at normal level. (" + value + ")");
 							Request req = new Request(Code.PUT);
 							req.setURI("coap://[" + ip + "]/switch?color=g");
 							req.send();
 							System.out.println("Sent PUT color g to switch");
 						}
-						DBService.addObservation(ip, value, timestamp);
+						DBService.addObservation(ip, value);
 
 						// request for mode changed
 						if(isAuto == 1 && mode.equals("man") ) {

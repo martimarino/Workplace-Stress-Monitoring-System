@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "contiki.h"
 #include "sys/etimer.h"
@@ -20,9 +21,7 @@
 
 
 #define SERVER_EP           "coap://[fd00::1]:5683"
-/*
-#define SERVER_EP           "coap://[fd80::f6ce:367e:a8e6:6e01]:5683"
-*/
+
 #define CONN_TRY_INTERVAL   1
 #define REG_TRY_INTERVAL    1
 
@@ -63,8 +62,8 @@ static void check_connection()
     else
     {
         LOG_INFO("BR reachable\n");
-		leds_off(15);
-        leds_on(6);			// yellow
+//		leds_off(15);
+//        leds_on(6);			// yellow
         connected = true;
     }
 }
@@ -83,10 +82,10 @@ void client_chunk_handler(coap_message_t *response)
     
     int len = coap_get_payload(response, &chunk);
     
-    if(strncmp((char*)chunk, "Successful Registration!", len) == 0){
+    if(strncmp((char*)chunk, "Registration successful!", len) == 0){
         registered = true;
-		leds_off(15);
-        leds_set(1);	// single led
+//		leds_off(15);
+//        leds_set(1);	// single led
     }
     else
         etimer_set(&wait_registration, CLOCK_SECOND * REG_TRY_INTERVAL);
@@ -101,21 +100,21 @@ PROCESS_THREAD(temperature_server, ev, data)
     PROCESS_BEGIN();
 
     static coap_endpoint_t server_ep;
-    static coap_message_t request[1]; // This way the packet can be treated as pointer as usual
+    static coap_message_t request[1]; // packet treated as pointer
   
-	leds_off(15);
     leds_set(2);		//red
     etimer_set(&wait_connectivity, CLOCK_SECOND * CONN_TRY_INTERVAL);
     
     while (!connected) {
         PROCESS_WAIT_UNTIL(etimer_expired(&wait_connectivity));
         check_connection();
-		leds_toggle(2);
+		etimer_reset(&wait_connectivity);
+//		leds_toggle(2);
     }
-    LOG_INFO("Temperature server connected\n");
+//    LOG_INFO("Temperature server connected\n");
 	
-	leds_off(15);
-	leds_on(6);
+//	leds_off(15);
+//	leds_on(6);	//giallo
     
     // Registration
     LOG_INFO("Sending registration message\n");
@@ -128,18 +127,22 @@ PROCESS_THREAD(temperature_server, ev, data)
         COAP_BLOCKING_REQUEST(&server_ep, request, client_chunk_handler);
         // wait for the timer to expire
         PROCESS_WAIT_UNTIL(etimer_expired(&wait_registration));
-		leds_toggle(6);
+//		leds_toggle(6);	//giallo
     }
 	
-	leds_off(15);
-	leds_on(4);
+//	leds_off(15);
+//	leds_on(4);		//green
 
     LOG_INFO("Temperature server registered\n");
-    LOG_INFO("Starting temperature server\n");
 
     // RESOURCES ACTIVATION
-    coap_activate_resource(&temperature_sensor, "sensor");
+	coap_activate_resource(&temperature_sensor, "sensor");
+	LOG_INFO("sensor activated");
     coap_activate_resource(&temperature_switch, "switch");
+	LOG_INFO("switch activated");
+
+leds_set(4);
+
 
     // SIMULATION
     etimer_set(&simulation, CLOCK_SECOND * SAMPLING_RATE);

@@ -58,10 +58,16 @@ build/nrf52840/dongle/obj/border-router.o: border-router.c \
  ../../../../os/sys/etimer.h ../../../../os/sys/rtimer.h \
  ../../../../os/dev/watchdog.h \
  ../../../../arch/cpu/nrf52840/./rtimer-arch.h ../../../../os/sys/pt.h \
- ../../../../os/sys/clock.h ../../../../os/sys/log.h \
- ../../../../os/net/linkaddr.h ../../../../os/sys/log-conf.h \
- ../../../../os/net/ipv6/uip.h ../../../../os/net/ipv6/uipopt.h \
- ../../../../os/net/ipv6/uipbuf.h ../../../../os/net/ipv6/tcpip.h
+ ../../../../os/sys/clock.h ../../../../os/dev/leds.h \
+ ../../../../os/dev/gpio-hal.h \
+ ../../../../arch/cpu/nrf52840/./dev/gpio-hal-arch.h \
+ ../../../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/drivers/include/nrfx_gpiote.h \
+ ../../../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/hal/nrf_gpiote.h \
+ ../../../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/hal/nrf_gpio.h \
+ ../../../../os/sys/log.h ../../../../os/net/linkaddr.h \
+ ../../../../os/sys/log-conf.h ../../../../os/net/ipv6/uip.h \
+ ../../../../os/net/ipv6/uipopt.h ../../../../os/net/ipv6/uipbuf.h \
+ ../../../../os/net/ipv6/tcpip.h
 ../../../../os/services/rpl-border-router/module-macros.h:
 ../../../../os/contiki.h:
 ../../../../arch/platform/nrf52840/./contiki-conf.h:
@@ -131,6 +137,12 @@ project-conf.h:
 ../../../../arch/cpu/nrf52840/./rtimer-arch.h:
 ../../../../os/sys/pt.h:
 ../../../../os/sys/clock.h:
+../../../../os/dev/leds.h:
+../../../../os/dev/gpio-hal.h:
+../../../../arch/cpu/nrf52840/./dev/gpio-hal-arch.h:
+../../../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/drivers/include/nrfx_gpiote.h:
+../../../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/hal/nrf_gpiote.h:
+../../../../arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/hal/nrf_gpio.h:
 ../../../../os/sys/log.h:
 ../../../../os/net/linkaddr.h:
 ../../../../os/sys/log-conf.h:

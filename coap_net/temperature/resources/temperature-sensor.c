@@ -1,10 +1,13 @@
 #include <stdlib.h>
-#include <time.h>
 #include <string.h>
+#include <stdbool.h>
+#include <time.h>
 
 #include "coap-engine.h"
 #include "dev/leds.h"
 #include "node-id.h"
+
+#include "global_params.h"
 
 /* Log configuration */
 #include "sys/log.h"
@@ -20,13 +23,11 @@ static int UPPER_BOUND_TEMP = 27;
 
 static int temperature = 22;
 
-#include "global_params.h"
-
 /****************** REST: Temperature *********************/
 
 static void get_temperature_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 static void put_temperature_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
-static void temperature_event_handler(void);
+static void event_temperature_handler(void);
 
 EVENT_RESOURCE(temperature_sensor,
                "title=\"Temperature sensor\";rt=\"sensor\";obs",
@@ -34,37 +35,48 @@ EVENT_RESOURCE(temperature_sensor,
                NULL,						// post handler
                put_temperature_handler,		// put handler
                NULL,						// delete handler
-               temperature_event_handler);
+               event_temperature_handler);
 			   
 
 // Handler for GET requests on the temperature_sensor resource
-static void get_temperature_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
+static void get_temperature_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset)
+{
+    unsigned int accept = -1;
+    coap_get_header_accept(request, &accept);
 
-    if (temperature < LOWER_BOUND_TEMP)
-    {
-        LOG_WARN("Temperature is too low: (%d)\n", temperature);
-    }
-    else if (temperature > UPPER_BOUND_TEMP)
-    {
-        LOG_WARN("Temperature is too high: (%d)\n", temperature);
-    } 
-	else {
-		LOG_INFO("Temperature is normal: (%d)\n", temperature);
+    if(accept == -1 || accept == APPLICATION_JSON) {
+
+		if (temperature < LOWER_BOUND_TEMP)
+		{
+			LOG_WARN("Temperature is too low: (%d)\n", temperature);
+		}
+		else if (temperature > UPPER_BOUND_TEMP)
+		{
+			LOG_WARN("Temperature is too high: (%d)\n", temperature);
+		} 
+		else {
+			LOG_INFO("Temperature is normal: (%d)\n", temperature);
+		}
+
+		// Fill the buffer
+        snprintf((char *)buffer, COAP_MAX_CHUNK_SIZE, "{\"node_id\":%d,\"value\":%d,\"isAuto\":%s}", node_id, temperature, isAuto ? "true" : "false");
+		int length = strlen((char*)buffer);
+
+		LOG_DBG("%s\n", buffer);
+//		printf("recover=%d-mode=%c\n", recover, mode);
+		fflush(stdout);
+
+		// Set CoAP response msg
+		coap_set_header_content_format(response, APPLICATION_JSON);
+		coap_set_header_etag(response, (uint8_t *)&length, 1);
+		coap_set_payload(response, buffer, length);
 	}
-
-	// Fill the buffer
-	time_t milliseconds = time(NULL);
-    snprintf((char *)buffer, COAP_MAX_CHUNK_SIZE, "{\"node_id\":%d,\"timestamp\":%lu,\"value\":%d,\"isAuto\":%d}", node_id, milliseconds, temperature, isAuto);
-	int length = strlen((char*)buffer);
-
-	printf("%s\n", buffer);
-	printf("incTemp=%d-decTemp=%d-isAuto=%d\n", incTemp, decTemp, isAuto);
-	fflush(stdout);
-
-	// Set CoAP response msg
-	coap_set_header_content_format(response, APPLICATION_JSON);
-	coap_set_header_etag(response, (uint8_t *)&length, 1);
-	coap_set_payload(response, buffer, length);
+    else
+    {
+		coap_set_status_code(response, NOT_ACCEPTABLE_4_06);
+        sprintf((char *)buffer, "Supported content-types:application/json");
+	    coap_set_payload(response, buffer, strlen((char*)buffer));
+	}
 }
 
 // Handler for PUT requests on the temperature_sensor resource
@@ -90,25 +102,25 @@ static void put_temperature_handler(coap_message_t *request, coap_message_t *res
 
         chunk = strtok(NULL, " ");
         int new_value = atoi(chunk);
-        printf("type: %s\n", type);
 
         // Update the upper or lower bound based on the specified type
-        if (strncmp(type, "u", 1) == 0) {
-            if (new_value < UPPER_BOUND_TEMP)
-                success = false;
-            else
-                UPPER_BOUND_TEMP = new_value;
-        } else {
-            if (new_value > LOWER_BOUND_TEMP)
-                success = false;
-            else
-                LOWER_BOUND_TEMP = new_value;
-        }
-
+		if (strncmp(type, "u", 1) == 0) {
+			if (new_value <= LOWER_BOUND_TEMP) {
+				success = false;
+			} else {
+				UPPER_BOUND_TEMP = new_value;
+			}
+		} else {
+			if (new_value >= UPPER_BOUND_TEMP) {
+				success = false;
+			} else {
+				LOWER_BOUND_TEMP = new_value;
+			}
+		}
         free(type);
     }
 
-    printf("LB: %d, UB: %d\n", LOWER_BOUND_TEMP, UPPER_BOUND_TEMP);
+    LOG_DBG("LB: %d, UB: %d\n", LOWER_BOUND_TEMP, UPPER_BOUND_TEMP);
 	fflush(stdout);
 
     // If the modification of the upper or lower bound fails, set an error response status
@@ -117,17 +129,17 @@ static void put_temperature_handler(coap_message_t *request, coap_message_t *res
 }
 
 // Handler for events associated with the temperature_sensor resource
-static void temperature_event_handler(void) {
+static void event_temperature_handler(void) {
 	
     // Estimate a new temperature randomly
     srand(time(NULL));
     int new_temp = temperature;
 	
-	if(incTemp || decTemp) {
-		if (incTemp) {
+	if(recoverLevel != 0) {
+		if (recoverLevel == 1) {
 			new_temp += VARIATION;
 		} 
-		else if (decTemp) {
+		else if (recoverLevel == -1) {
 			new_temp -= VARIATION;
 		} 
 	} else {	
@@ -137,7 +149,7 @@ static void temperature_event_handler(void) {
 		if (random < 3) {
 			if (random == 0) // decrease
 				new_temp -= VARIATION;
-			else // increase*/
+			else // increase*/					/*
 				new_temp += VARIATION;
 		}
 	}
@@ -149,4 +161,3 @@ static void temperature_event_handler(void) {
         coap_notify_observers(&temperature_sensor);
     }
 }
-

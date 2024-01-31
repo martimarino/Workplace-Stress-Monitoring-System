@@ -97,7 +97,7 @@ public class MQTT implements MqttCallback {
 				if(!th.checkSensorExistence(nodeId)) {
 					th.addSensor(nodeId, "humidity");
 				}
-				th.addObservation(nodeId, value, timestamp);
+				th.addObservation(nodeId, value);
 				int lower = 30;
 				int upper = 60;
 				boolean on = false;
@@ -136,7 +136,7 @@ public class MQTT implements MqttCallback {
 				if(!th.checkSensorExistence(nodeId)) {
 					th.addSensor(nodeId, "brightness");
 				}
-				th.addObservation(nodeId, value, timestamp);
+				th.addObservation(nodeId, value);
 				int lower = 300;
 				int upper = 400;
 				boolean on = false;

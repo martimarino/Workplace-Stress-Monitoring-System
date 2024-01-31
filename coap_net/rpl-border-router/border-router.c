@@ -31,6 +31,7 @@
  */
 
 #include "contiki.h"
+#include "dev/leds.h"
 
 /* Log configuration */
 #include "sys/log.h"
@@ -52,6 +53,7 @@ PROCESS_THREAD(contiki_ng_br, ev, data)
 #endif /* BORDER_ROUTER_CONF_WEBSERVER */
 
   LOG_INFO("Contiki-NG Border Router started\n");
+  leds_set(1);
 
   PROCESS_END();
 }

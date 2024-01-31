@@ -14,7 +14,7 @@ public class Collector {
         try {
             th.cleanDB();
 
-            mc = new MQTT();
+            //mc = new MQTT();
             rs = new RegistrationService();
             rs.start();
 
