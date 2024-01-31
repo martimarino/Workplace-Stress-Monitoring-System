@@ -126,7 +126,7 @@ public class IoTDevice {
 						if(!success)
 							return;
 
-						System.out.println("Received: " + value + " °C");
+						System.out.println("Received: " + value + " °C - auto: " + isAuto);
 
 						// request for warn message
 						if (value < getLowerBound(dataType) && recoverLevel == 0) {
@@ -155,23 +155,19 @@ public class IoTDevice {
 						DBService.addObservation(ip, value);
 
 						// request for mode changed
-						if(isAuto && mode.equals("man") ) {
+						if(isAuto && mode.equals("man")) {
 							logger.info(dataType + " mode changed to: " + mode);
-							String payload = "mode=auto";
 							Request req = new Request(Code.PUT);
-							req.setPayload(payload);
-							req.setURI("coap://[" + ip + "]/switch");
-							mode = "auto";
+							req.setURI("coap://[" + ip + "]/switch?mode=auto");
 							req.send();
+							mode = "auto";
 							System.out.println("Sent PUT mode auto to switch");
 						} else if (!isAuto && mode.equals("auto")) {
 							logger.info(dataType + " mode changed to: " + mode);
-							String payload = "mode=man";
 							Request req = new Request(Code.PUT);
-							req.setPayload(payload);
-							req.setURI("coap://[" + ip + "]/switch");
-							mode = "man";
+							req.setURI("coap://[" + ip + "]/switch?mode=man");
 							req.send();
+							mode = "man";
 							System.out.println("Sent PUT mode man to switch");
 						}
 					}
