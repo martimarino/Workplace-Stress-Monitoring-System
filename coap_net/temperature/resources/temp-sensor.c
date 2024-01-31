@@ -57,7 +57,7 @@ EVENT_RESOURCE(temp_sensor,
 #define VARIATION 1
 
 static int LOWER_BOUND_TEMP = 19;
-static int UPPER_BOUND_TEMP = 27;
+static int UPPER_BOUND_TEMP = 25;
 
 static int temperature = 22;
 
@@ -66,7 +66,6 @@ static void
 temp_event_handler(void)
 {
 	// Estimate a new temperature randomly
-    srand(time(NULL));
     int new_temp = temperature;
 	
 	if(recoverLevel != 0) {
@@ -78,7 +77,6 @@ temp_event_handler(void)
 		} 
 	} else {	
 		int random = rand() % 8; // generates 0, 1, 2, 3, 4, 5, 6, 7
-
 		// Change the temperature with a certain probability
 		if (random < 3) {
 			if (random == 0) // decrease

@@ -40,17 +40,14 @@ static void put_switch_handler(coap_message_t *request, coap_message_t *response
             LOG_INFO("New color: %.*s\n", (int)len, color);
 
             if (strncmp(color, "r", strlen("r")) == 0) {
-				leds_off(15);
-                leds_on(8);
+				leds_set(2);
 				if(isAuto)
 					recoverLevel = -1;
             } else if (strncmp(color, "g", strlen("g")) == 0) {
-                leds_off(15);
-                leds_on(4);
+                leds_set(4);
 				recoverLevel = 0;
             } else if (strncmp(color, "b", strlen("b")) == 0) {
-                leds_off(15);
-                leds_on(2);
+                leds_set(8);
 				if(isAuto)
 					recoverLevel = 1;
             }

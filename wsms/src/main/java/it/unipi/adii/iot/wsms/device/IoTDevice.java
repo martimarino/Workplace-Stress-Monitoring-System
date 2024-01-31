@@ -19,7 +19,7 @@ import org.json.simple.parser.ParseException;
 
 public class IoTDevice {
 	private static final int LOWER_BOUND_TEMP = 19; // in °C
-	private static final int UPPER_BOUND_TEMP = 27; // in °C
+	private static final int UPPER_BOUND_TEMP = 25; // in °C
 	private static final int COMFORT_TEMP = 22;		// in °C
 	
 	private static final int LOWER_BOUND_HUM = 30; // in %
@@ -94,7 +94,7 @@ public class IoTDevice {
 
 						int nodeId = 0;
 						int value = 0;
-						int isAuto = 1;
+						boolean isAuto = true;
 
 						boolean success = true;
 
@@ -106,7 +106,7 @@ public class IoTDevice {
 
 							nodeId = Integer.parseInt(sensorMessage.get("node_id").toString());
 							value = Integer.parseInt(sensorMessage.get("value").toString());
-							isAuto = Integer.parseInt(sensorMessage.get("isAuto").toString());
+							isAuto = Boolean.parseBoolean(sensorMessage.get("isAuto").toString());
 
 						} catch (ParseException pe) {
 							System.out.println(response.getResponseText());
@@ -126,10 +126,10 @@ public class IoTDevice {
 						if(!success)
 							return;
 
-						System.out.println("Received: " + value);
+						System.out.println("Received: " + value + " °C");
 
 						// request for warn message
-						if (value < getLowerBound(dataType) && recoverLevel != 0) {
+						if (value < getLowerBound(dataType) && recoverLevel == 0) {
 							recoverLevel = 1;
 							logger.warn(dataType + " too low! (" + value + ")");
 							Request req = new Request(Code.PUT);
@@ -137,7 +137,7 @@ public class IoTDevice {
 							req.send();
 							System.out.println("Sent PUT color b to switch");
 
-						} else if (value > getUpperBound(dataType) && recoverLevel != 0) {
+						} else if (value > getUpperBound(dataType) && recoverLevel == 0) {
 							recoverLevel = -1;
 							logger.warn(dataType + " too high! (" + value + ")");
 							Request req = new Request(Code.PUT);
@@ -155,7 +155,7 @@ public class IoTDevice {
 						DBService.addObservation(ip, value);
 
 						// request for mode changed
-						if(isAuto == 1 && mode.equals("man") ) {
+						if(isAuto && mode.equals("man") ) {
 							logger.info(dataType + " mode changed to: " + mode);
 							String payload = "mode=auto";
 							Request req = new Request(Code.PUT);
@@ -164,7 +164,7 @@ public class IoTDevice {
 							mode = "auto";
 							req.send();
 							System.out.println("Sent PUT mode auto to switch");
-						} else if (isAuto == 0 && mode.equals("auto")) {
+						} else if (!isAuto && mode.equals("auto")) {
 							logger.info(dataType + " mode changed to: " + mode);
 							String payload = "mode=man";
 							Request req = new Request(Code.PUT);

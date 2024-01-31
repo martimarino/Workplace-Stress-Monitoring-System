@@ -163,10 +163,8 @@ PROCESS_THREAD(temperature_server, ev, data)
 
     // Resources activation
 	coap_activate_resource(&temp_sensor, "sensor");
-	LOG_INFO("sensor activated");
     coap_activate_resource(&temp_switch, "switch");
-	LOG_INFO("switch activated");
-	leds_set(4);	//green
+	leds_set(5);	//green
 
 
     // Simulation
