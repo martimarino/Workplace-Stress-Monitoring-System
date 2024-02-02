@@ -39,12 +39,8 @@ static const char *broker_ip = MQTT_CLIENT_BROKER_IP_ADDR;
 // Defaukt config values
 #define DEFAULT_BROKER_PORT         1883
 #define DEFAULT_PUBLISH_INTERVAL    (30 * CLOCK_SECOND)
-#define LOWER_BOUND_LUM             300
-#define UPPER_BOUND_LUM             500
 #define VARIATION                   1
-
 static long PUBLISH_INTERVAL = DEFAULT_PUBLISH_INTERVAL;
-
 // We assume that the broker does not require authentication
 
 
@@ -101,6 +97,7 @@ PROCESS(mqtt_brightness_client_process, "Brightness MQTT Client");
 static int brightness_level = 400;
 static int mode = 0; //mode 0 = light off, mode 1 = light on, mode = 2 manual mode
 static bool isOn = false;
+static int n_sample = 0;
 
 /*---------------------------------------------------------------------------*/
 static void
@@ -110,24 +107,27 @@ pub_handler(const char *topic, uint16_t topic_len, const uint8_t *chunk,
     char message[64];
     strcpy(message, "brightness_");
     sprintf(message + strlen("brightness_"), "%d", node_id);
-
+    printf("message: %s", chunk);
     if(strcmp(topic, message) == 0) {
         if(strcmp((const char *)chunk, "inc")==0){
-	    if(!isOn){
-		isOn = true;
-		mode = 1;
-            	printf("Turn on light, low brightness level \n");
-	    }
+	     if(!isOn){
+            isOn = true;
+            mode = 1;
+            leds_set(14);
+            printf("Light tuned on, low brightness level \n");
+	      }
         }
         else if(strcmp((const char *)chunk, "dec")==0){
 	    if(isOn){
-		isOn = false; 
-		mode = 0;           
-		printf("Turn off light, high brightness level \n");
+            isOn = false;
+            mode = 0;
+            leds_off(14);
+            printf("Light turned off, high brightness level \n");
 	    }
         }else if (strcmp((const char *)chunk, "good")==0){
             printf("Good brightness level!\n");
         }else if(strcmp((const char *)chunk, "off")==0){
+	        leds_set(1);
             printf("Manual handling on!\n");
         }else{
             printf("Unknown command\n");
@@ -208,14 +208,15 @@ static void
 simulate_brightness(void)
 {
    double frequency = 1.0;
-   int time = 10 + CLOCK_SECOND; 
+   int hour = (10 + n_sample)%24;
+   printf("ora: %d", hour);
 
     // Translate and normalize the value of the sinusoidal function
-    double normalizedValue = 0.5 * sin(2 * 3.14 * frequency * time / 24.0) + 0.5;
+    double normalizedValue = 0.5 * sin(2 * 3.14 * frequency * (hour - 12)/ 24.0) + 0.5;
 
     // Scale the value into the desired range (200-500)
     double luxValue = 200.0 + normalizedValue * (500.0 - 200.0);
-
+    n_sample += 1;
     brightness_level = luxValue;
 }
 
@@ -252,7 +253,7 @@ while(1) {
 
     if((ev == PROCESS_EVENT_TIMER && data == &periodic_timer) ||
     ev == PROCESS_EVENT_POLL){
-	//printf("State %d\n", state);
+	printf("State %d\n", state);
 
         if(state==STATE_INIT){
             if(have_connectivity()==true)
@@ -293,14 +294,15 @@ while(1) {
 
             simulate_brightness();
 
-            PUBLISH_INTERVAL = DEFAULT_PUBLISH_INTERVAL;
-	    //time_t seconds = time(NULL);
             sprintf(app_buffer, "{\"node\": %d, \"brightness\": %d, \"mode\": %d}", node_id, brightness_level, mode);
-            //printf("%s\n", app_buffer);
+            printf("%s\n", app_buffer);
+    	    if(mode != 2)
+		leds_on(1);
+	    else
+		leds_off(1);
             mqtt_publish(&conn, NULL, pub_topic, (uint8_t *)app_buffer,
             strlen(app_buffer), MQTT_QOS_LEVEL_0, MQTT_RETAIN_OFF);
-
-            STATE_MACHINE_PERIODIC = PUBLISH_INTERVAL;
+	    STATE_MACHINE_PERIODIC = PUBLISH_INTERVAL;
 
         } else if ( state == STATE_DISCONNECTED ){
             LOG_ERR("Disconnected from MQTT broker\n");
@@ -313,7 +315,7 @@ while(1) {
   if(ev == button_hal_press_event) {
 		btn = (button_hal_button_t *)data;
 		mode = (mode != 2)? 2 : isOn;
-		//LOG_INFO("Button pressed (%s)\n",    BUTTON_HAL_GET_DESCRIPTION(btn));
+		printf("Button pressed (%s)\n",    BUTTON_HAL_GET_DESCRIPTION(btn));
 	    }
 }
 

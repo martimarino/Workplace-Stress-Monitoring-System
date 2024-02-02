@@ -42,7 +42,6 @@ static const char *broker_ip = MQTT_CLIENT_BROKER_IP_ADDR;
 #define VARIATION                   1o
 
 static long PUBLISH_INTERVAL = DEFAULT_PUBLISH_INTERVAL;
-
 // We assume that the broker does not require authentication
 
 
@@ -80,6 +79,7 @@ static char sub_topic[BUFFER_SIZE];
 static struct etimer periodic_timer;
 static long STATE_MACHINE_PERIODIC = DEFAULT_STATE_MACHINE_PERIODIC;
 
+
 /*---------------------------------------------------------------------------*/
 /*
  * The main MQTT buffers.
@@ -114,23 +114,26 @@ pub_handler(const char *topic, uint16_t topic_len, const uint8_t *chunk,
     if(strcmp(topic, message) == 0) {
         if(strcmp((const char *)chunk, "inc")==0){
             printf("Turn on humidifier, high humidity level \n");
-            leds_set(2);
+            leds_off(4);
+            leds_on(2);
             inc_humidity = true;
             dec_humidity = false;
         }
         else if(strcmp((const char *)chunk, "dec")==0){
             printf("Turn on dehumidifier, low humidity level \n");
-            leds_set(2);
+            leds_off(4);
+            leds_on(2);
             inc_humidity = false;
             dec_humidity = true;
         }else if (strcmp((const char *)chunk, "good")==0){
             printf("Good humidity level!\n");
-            leds_set(4);
+            leds_off(2);
+            leds_on(4);
             inc_humidity = false;
             dec_humidity = false;
         }else if(strcmp((const char *)chunk, "off")==0){
             printf("Manual handling on!\n");
-            leds_set(6);
+            leds_set(0);
             inc_humidity = false;
             dec_humidity = false;
         }else{
@@ -286,7 +289,7 @@ while(1) {
 
         if(state==STATE_CONNECTED){
            //subscribe topic
-	    strcpy(sub_topic, "humidity_");
+	        strcpy(sub_topic, "humidity_");
             sprintf(sub_topic + strlen("humidity_"), "%d", node_id);
             status = mqtt_subscribe(&conn, NULL, sub_topic, MQTT_QOS_LEVEL_0);
 
@@ -296,21 +299,26 @@ while(1) {
                 PROCESS_EXIT();
 
             }
-	    state = STATE_SUBSCRIBED;
 
+	        state = STATE_SUBSCRIBED;
         }
 
         if(state == STATE_SUBSCRIBED){
-	    static char pub_topic[BUFFER_SIZE];
+	        static char pub_topic[BUFFER_SIZE];
             sprintf(pub_topic, "%s", "humidity_sample");
 
             update_humidity_level();
 
-            sprintf(app_buffer, "{\"node\": %d, \"humidity\": %d, \"mode\": %d}", node_id, humidity_level, seconds, mode);
-            //printf("%s\n", app_buffer);
+            sprintf(app_buffer, "{\"node\": %d, \"humidity\": %d, \"mode\": %d}", node_id, humidity_level, mode);
+
+            if(mode != 1)
+            leds_on(1);
+            else
+            leds_off(1);
+
+            printf("%s\n", app_buffer);
             mqtt_publish(&conn, NULL, pub_topic, (uint8_t *)app_buffer,
             strlen(app_buffer), MQTT_QOS_LEVEL_0, MQTT_RETAIN_OFF);
-
             STATE_MACHINE_PERIODIC = PUBLISH_INTERVAL;
 
         } else if ( state == STATE_DISCONNECTED ){
@@ -324,7 +332,7 @@ while(1) {
   if(ev == button_hal_press_event) {
 		btn = (button_hal_button_t *)data;
 		mode = (mode == 0)? 1 : 0;
-		//printf("Button pressed (%s)\n", BUTTON_HAL_GET_DESCRIPTION(btn));
+		printf("Button pressed (%s)\n", BUTTON_HAL_GET_DESCRIPTION(btn));
 	    }
 }
 
