@@ -16,22 +16,13 @@ import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
 
+import static it.unipi.adii.iot.wsms.services.DBService.db_Service;
+import static it.unipi.adii.iot.wsms.utils.Parameters.*;
+
 
 public class IoTDevice {
-	private static final int LOWER_BOUND_TEMP = 19; // in °C
-	private static final int UPPER_BOUND_TEMP = 25; // in °C
-	private static final int COMFORT_TEMP = 22;		// in °C
-	
-	private static final int LOWER_BOUND_HUM = 30; // in %
-	private static final int UPPER_BOUND_HUM = 60; // in %
-	private static final int COMFORT_HUM = 40;	   // in %
 
-	private static final int LOWER_BOUND_NOISE = 10; // in dB
-	private static final int UPPER_BOUND_NOISE = 60; // in dB
-	private static final int COMFORT_NOISE = 30;	 // in dB
-
-	private static final Logger logger = LogManager.getLogger(IoTDevice.class);
-	private static final DBService db_Service = DBService.getInstance();
+	public static final Logger logger = LogManager.getLogger(IoTDevice.class);
 
 	private final String ip;
 	private String mode = "auto";
@@ -41,45 +32,6 @@ public class IoTDevice {
 	private CoapClient resSwitch;
 	private boolean stopObserve = false;
 
-
-	public static int getLowerBound(String dataType) {
-		switch (dataType) {
-			case "temperature":
-				return LOWER_BOUND_TEMP;
-			case "humidity":
-				return LOWER_BOUND_HUM;
-			case "noise":
-				return LOWER_BOUND_NOISE;
-			default:
-				return -1;
-		}
-	}
-
-	public static int getUpperBound(String dataType) {
-		switch (dataType) {
-			case "temperature":
-				return UPPER_BOUND_TEMP;
-			case "humidity":
-				return UPPER_BOUND_HUM;
-			case "noise":
-				return UPPER_BOUND_NOISE;
-			default:
-				return -1;
-		}
-	}
-	
-	public static int getComfortValue(String dataType) {
-		switch (dataType) {
-			case "temperature":
-				return COMFORT_TEMP;
-			case "humidity":
-				return COMFORT_HUM;
-			case "noise":
-				return COMFORT_NOISE;
-			default:
-				return -1;
-		}
-	}
 
 
 	public IoTDevice(String ipAddress, String dataType) {

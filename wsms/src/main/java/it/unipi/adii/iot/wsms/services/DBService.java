@@ -13,6 +13,8 @@ import org.apache.logging.log4j.Logger;
 public final class DBService {
 	private static final Logger logger = LogManager.getLogger(DBService.class.getName());
 
+	public static final DBService db_Service = DBService.getInstance();
+
 	private final static String DB_DEFAULT_IP = "localhost";
 	private final static String DB_DFAULT_PORT = "3306";
 	private final static String DB_USER = "root";

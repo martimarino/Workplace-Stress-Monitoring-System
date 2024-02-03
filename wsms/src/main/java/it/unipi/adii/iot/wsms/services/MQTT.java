@@ -13,21 +13,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import java.util.HashMap;
 
+import static it.unipi.adii.iot.wsms.utils.Parameters.*;
+
 public class MQTT implements MqttCallback {
 
-	private static String broker = "tcp://127.0.0.1:1883";
-	private static String clientId = "JavaCollector";
-	private static String subTopic = "humidity_sample";
-	private static String subTopic1 = "brightness_sample";
-	private static String pubTopic = "humidity";
-	private static String pubTopic1 = "brightness";
+	private static final String subTopic = "humidity_sample";
+	private static final String subTopic1 = "brightness_sample";
 	private static String commandH = "";
-	private static HashMap<String, String> commandB = new HashMap<>();
-	private static int lux = 100;
-	private static String incCommand = "inc";
-	private static String decCommand = "dec";
-	private static String offCommand = "off";
-	private static String goodCommand = "good";
+	private static final HashMap<String, String> commandB = new HashMap<>();
 	private static MqttClient mqttClient = null;
 	private static final Logger logger = LogManager.getLogger(MQTT.class);
 	private static final DBService th = DBService.getInstance();
@@ -36,6 +29,8 @@ public class MQTT implements MqttCallback {
 		do {
 			int timeWindow = 50000;
 			try {
+				String broker = "tcp://127.0.0.1:1883";
+				String clientId = "JavaCollector";
 				mqttClient = new MqttClient(broker, clientId);
 				mqttClient.setCallback( this );
 				mqttClient.connect();
@@ -97,19 +92,21 @@ public class MQTT implements MqttCallback {
 		try {
 			JSONObject sensorMessage = (JSONObject) JSONValue.parseWithException(new String(payload));
 			System.out.println("message parsed");
+			String incCommand = "inc";
+			String offCommand = "off";
+			String decCommand = "dec";
+			String goodCommand = "good";
 			if (sensorMessage.containsKey("humidity")) {
-				Integer value = Integer.parseInt(sensorMessage.get("humidity").toString());
+				int value = Integer.parseInt(sensorMessage.get("humidity").toString());
 				String nodeId = sensorMessage.get("node").toString();
-				Integer mode = Integer.parseInt(sensorMessage.get("mode").toString());
+				int mode = Integer.parseInt(sensorMessage.get("mode").toString());
 				if(!th.checkSensorExistence(nodeId)) {
 					th.addSensor(nodeId, "humidity");
 				}
-				th.addObservation(nodeId, value);
-				int lower = 30;
-				int upper = 60;
-				boolean on = false;
+				DBService.addObservation(nodeId, value);
 				String reply;
 
+				String pubTopic = "humidity";
 				if(mode == 1)
 				{
 					reply = offCommand;
@@ -118,13 +115,13 @@ public class MQTT implements MqttCallback {
 					logger.info("[MANUAL MODE] - "+nodeId+" - the humidity is controlled manually");
 					System.out.println("[MANUAL MODE] - "+nodeId+" - the humidity is controlled manually");
 				}
-				else if (value > lower && value <= upper) {
+				else if (value > getLowerBound("humidity") && value <= getUpperBound("humidity")) {
 					reply = goodCommand;
 					if(!commandH.equals(goodCommand))
 						publish(pubTopic, reply, nodeId);
 					logger.info("[NORMAL] - "+nodeId+" - the humidity is comfortable!");
 					System.out.println("[NORMAL] - "+nodeId+" - the humidity is comfortable!");
-				} else if(value > upper)
+				} else if(value > getUpperBound("humidity"))
 				{
 					reply = decCommand;
 					if(!commandH.equals(decCommand))
@@ -153,12 +150,11 @@ public class MQTT implements MqttCallback {
 				if(!th.checkSensorExistence(nodeId)) {
 					th.addSensor(nodeId, "brightness");
 				}
-				th.addObservation(nodeId, value);
-				int lower = 300;
-				int upper = 400;
-				boolean on = false;
+				DBService.addObservation(nodeId, value);
 				String reply = "";
 
+				String pubTopic1 = "brightness";
+				int lux = 100;
 				if(mode == 2)
 				{
 					reply = offCommand;
@@ -168,14 +164,14 @@ public class MQTT implements MqttCallback {
 					logger.info("[MANUAL MODE] - "+nodeId+" - the brightness is controlled manually");
 					System.out.println("[MANUAL MODE] - "+nodeId+" - the brightness is controlled manually");
 				}
-				else if(mode == 1 && (value + lux) > upper)
+				else if(mode == 1 && (value + lux) > getUpperBound("brightness"))
 				{
 					reply = decCommand;
 					if(!commandB.get(nodeId).equals(reply))
 						publish(pubTopic1, reply, nodeId);
 					logger.info("[CRITICAL] - "+nodeId+" - the brightness is too high!");
 					System.out.println("[CRITICAL] - "+nodeId+" - the brightness is too high!");
-				} else if(mode == 0 && value < lower) {
+				} else if(mode == 0 && value < getLowerBound("brightness")) {
 					reply = incCommand;
 					System.out.println("comm:" + reply + " commB: " + commandB.get(nodeId));
 					if(!commandB.get(nodeId).equals(reply)){
