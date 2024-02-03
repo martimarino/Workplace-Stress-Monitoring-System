@@ -26,7 +26,7 @@ public class IoTDevice {
 
 	private final String ip;
 	private String mode = "auto";
-	int recoverLevel = 0;
+	private int recoverLevel = 0;
 
 	private CoapClient resSensor;
 	private CoapClient resSwitch;
@@ -78,11 +78,12 @@ public class IoTDevice {
 						if(!success)
 							return;
 
-						System.out.println("Received: " + value + " °C - auto: " + isAuto);
+						System.out.println("["+nodeId+"]: "+value+" °C - auto:"+isAuto+"RL: "+recoverLevel);
 
 						// request for warn message
 						if (value < getLowerBound(dataType) && recoverLevel == 0) {
-							recoverLevel = 1;
+       if(isAuto)
+							  recoverLevel = 1;
 							logger.warn(dataType + " too low! (" + value + ")");
 							Request req = new Request(Code.PUT);
 							req.setURI("coap://[" + ip + "]/switch?color=b");
@@ -90,7 +91,8 @@ public class IoTDevice {
 							System.out.println("Sent PUT color b to switch");
 
 						} else if (value > getUpperBound(dataType) && recoverLevel == 0) {
-							recoverLevel = -1;
+       if (isAuto)
+         recoverLevel = -1;
 							logger.warn(dataType + " too high! (" + value + ")");
 							Request req = new Request(Code.PUT);
 							req.setURI("coap://[" + ip + "]/switch?color=r");
@@ -108,6 +110,7 @@ public class IoTDevice {
 
 						// request for mode changed
 						if(isAuto && mode.equals("man")) {
+       recoverLevel = 0;
 							logger.info(dataType + " mode changed to: " + mode);
 							Request req = new Request(Code.PUT);
 							req.setURI("coap://[" + ip + "]/switch?mode=auto");
@@ -123,6 +126,8 @@ public class IoTDevice {
 							System.out.println("Sent PUT mode man to switch");
 						}
 					}
+
+     System.out.println("RL set to: "+recoverLevel);
 
 					public void onError() {
 						stopObserve = true;
