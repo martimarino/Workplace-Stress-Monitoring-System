@@ -18,9 +18,9 @@ public class Parameters {
     public static final int UPPER_BOUND_HUM = 60; // in %
     public static final int COMFORT_HUM = 40;	   // in %
 
-    public static final int LOWER_BOUND_BRIGHT = 10; // in dB
-    public static final int UPPER_BOUND_BRIGHT = 60; // in dB
-    public static final int COMFORT_BRIGHT = 30;	 // in dB
+    public static final int LOWER_BOUND_BRIGHT = 300; // in lux
+    public static final int UPPER_BOUND_BRIGHT = 400; // in lux
+
 
 
     public static int getLowerBound(String dataType) {
@@ -29,7 +29,7 @@ public class Parameters {
                 return LOWER_BOUND_TEMP;
             case "humidity":
                 return LOWER_BOUND_HUM;
-            case "noise":
+            case "brightness":
                 return LOWER_BOUND_BRIGHT;
             default:
                 return -1;
@@ -42,7 +42,7 @@ public class Parameters {
                 return UPPER_BOUND_TEMP;
             case "humidity":
                 return UPPER_BOUND_HUM;
-            case "noise":
+            case "brightness":
                 return UPPER_BOUND_BRIGHT;
             default:
                 return -1;
@@ -55,24 +55,35 @@ public class Parameters {
                 return COMFORT_TEMP;
             case "humidity":
                 return COMFORT_HUM;
-            case "noise":
-                return COMFORT_BRIGHT;
             default:
                 return -1;
         }
     }
 
+    private Timestamp currentTimestamp;
 
-    static int hour = 7;
+    public setInitTime() {
+        Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.HOUR_OF_DAY, 7);
+        cal.set(Calendar.MINUTE, 45);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
 
-    public Timestamp adjustTime(Timestamp ts) {
+        currentTimestamp = new Timestamp(cal.getTime().getTime());
+    }
+
+
+
+    public Timestamp adjustTime() {
 
         Calendar cal = Calendar.getInstance();
-        cal.set(Calendar.HOUR_OF_DAY, hour);
+        cal.setTime(currentTimestamp);
 
-        hour = (hour+1)%24;
+        cal.add(Calendar.MINUTE, 15);
 
-        return new Timestamp(cal.getTime().getTime());
+        currentTimestamp = new Timestamp(cal.getTime().getTime());
+
+        return currentTimestamp;
 
     }
 

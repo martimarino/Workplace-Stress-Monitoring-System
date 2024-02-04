@@ -81,8 +81,8 @@ public class IoTDevice {
 						System.out.println("["+nodeId+"]: "+value+" °C - auto:"+isAuto+"RL: "+recoverLevel);
 
 						// request for warn message
-						if (value < getLowerBound(dataType) && recoverLevel == 0) {
-       if(isAuto)
+						if (value < getLowerBound(dataType) && recoverLevel == 0 && isAuto) {
+       						if(isAuto)
 							  recoverLevel = 1;
 							logger.warn(dataType + " too low! (" + value + ")");
 							Request req = new Request(Code.PUT);
@@ -90,15 +90,16 @@ public class IoTDevice {
 							req.send();
 							System.out.println("Sent PUT color b to switch");
 
-						} else if (value > getUpperBound(dataType) && recoverLevel == 0) {
-       if (isAuto)
-         recoverLevel = -1;
+						} else if (value > getUpperBound(dataType) && recoverLevel == 0 && isAuto) {
+						   if (isAuto)
+							 recoverLevel = -1;
 							logger.warn(dataType + " too high! (" + value + ")");
 							Request req = new Request(Code.PUT);
 							req.setURI("coap://[" + ip + "]/switch?color=r");
 							req.send();
 							System.out.println("Sent PUT color r to switch");
-						} else if (recoverLevel != 0 && value == getComfortValue(dataType)) {
+
+						} else if (recoverLevel != 0 && value == getComfortValue(dataType) && isAuto) {
 							recoverLevel = 0;
 							logger.info(dataType + " at normal level. (" + value + ")");
 							Request req = new Request(Code.PUT);
@@ -110,7 +111,6 @@ public class IoTDevice {
 
 						// request for mode changed
 						if(isAuto && mode.equals("man")) {
-       recoverLevel = 0;
 							logger.info(dataType + " mode changed to: " + mode);
 							Request req = new Request(Code.PUT);
 							req.setURI("coap://[" + ip + "]/switch?mode=auto");
@@ -118,6 +118,7 @@ public class IoTDevice {
 							mode = "auto";
 							System.out.println("Sent PUT mode auto to switch");
 						} else if (!isAuto && mode.equals("auto")) {
+							recoverLevel = 0;
 							logger.info(dataType + " mode changed to: " + mode);
 							Request req = new Request(Code.PUT);
 							req.setURI("coap://[" + ip + "]/switch?mode=man");

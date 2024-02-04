@@ -60,12 +60,12 @@ static void put_switch_handler(coap_message_t *request, coap_message_t *response
             LOG_INFO("New mode: %.*s\n", (int)len, mode);
 
             if (strncmp(mode, "man", strlen("man")) == 0) {
-                leds_off(1);
-
+                leds_off(15);
+                recoverLevel = 0;
             } else if (strncmp(mode, "auto", strlen("auto")) == 0) {
                 leds_on(1);
             }
-			recoverLevel = 0;
+
         }
 	} else {
 		coap_set_status_code(response, BAD_REQUEST_4_00);

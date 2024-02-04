@@ -119,7 +119,7 @@ static void temp_get_handler(coap_message_t *request, coap_message_t *response, 
         snprintf((char *)buffer, COAP_MAX_CHUNK_SIZE, "{\"node_id\":%d,\"value\":%d,\"isAuto\":%s}", node_id, temperature, isAuto ? "true" : "false");
 		int length = strlen((char*)buffer);
 
-		LOG_INFO("%s\n", buffer);
+		LOG_INFO("%s, RL=%d\n", buffer, recoverLevel);
 		fflush(stdout);
 
 		// Set CoAP response msg

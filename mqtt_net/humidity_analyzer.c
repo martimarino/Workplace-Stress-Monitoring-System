@@ -36,7 +36,7 @@ static const char *broker_ip = MQTT_CLIENT_BROKER_IP_ADDR;
 
 // Defaukt config values
 #define DEFAULT_BROKER_PORT         1883
-#define DEFAULT_PUBLISH_INTERVAL    (40 * CLOCK_SECOND)
+#define DEFAULT_PUBLISH_INTERVAL    (10 * CLOCK_SECOND)
 #define LOWER_BOUND_HUM             30
 #define UPPER_BOUND_HUM             60
 #define VARIATION                   1o
@@ -99,7 +99,7 @@ static bool inc_humidity = false;
 static bool dec_humidity = false;
 #define MIN_HUMIDITY 0
 #define MAX_HUMIDITY 100
-static int humidity_level = 50;
+static int humidity_level = 45;
 static int mode = 0; //mode 0 = automatic mode, mode 1 = manual mode
 
 /*---------------------------------------------------------------------------*/
@@ -227,7 +227,7 @@ update_humidity_level(void)
         if(humidity_level < MIN_HUMIDITY)
             humidity_level = MIN_HUMIDITY;
     }else{
-        humidity_level += (rand() % (5)) - 2; //variation in [-2,2] interval
+        humidity_level += (rand() % 11) - 5; //variation in [-5,5] interval
 	if(humidity_level > MAX_HUMIDITY)
 	   humidity_level = MAX_HUMIDITY;
 	else if(humidity_level < MIN_HUMIDITY)
@@ -269,7 +269,7 @@ while(1) {
 
     if((ev == PROCESS_EVENT_TIMER && data == &periodic_timer) ||
     ev == PROCESS_EVENT_POLL){
-	//printf("State %d\n", state);
+	printf("State %d\n", state);
 
         if(state==STATE_INIT){
             if(have_connectivity()==true)
@@ -299,8 +299,13 @@ while(1) {
                 PROCESS_EXIT();
 
             }
-
-	        state = STATE_SUBSCRIBED;
+            if(check_sub)
+                state = STATE_SUBSCRIBED;
+            else
+            {
+                etimer_set(&periodic_timer, STATE_MACHINE_PERIODIC);
+                continue;
+            }
         }
 
         if(state == STATE_SUBSCRIBED){
@@ -312,9 +317,9 @@ while(1) {
             sprintf(app_buffer, "{\"node\": %d, \"humidity\": %d, \"mode\": %d}", node_id, humidity_level, mode);
 
             if(mode != 1)
-            leds_on(1);
+                leds_on(1);
             else
-            leds_off(1);
+                leds_off(1);
 
             printf("%s\n", app_buffer);
             mqtt_publish(&conn, NULL, pub_topic, (uint8_t *)app_buffer,
