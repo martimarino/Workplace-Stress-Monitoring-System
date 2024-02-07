@@ -60,7 +60,7 @@ public class Parameters {
         }
     }
 
-    private Timestamp currentTimestamp;
+    private static Timestamp currentTimestamp;
 
     public static void setInitTime() {
         Calendar cal = Calendar.getInstance();
