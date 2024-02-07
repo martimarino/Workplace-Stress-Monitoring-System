@@ -3,6 +3,7 @@ package it.unipi.adii.iot.wsms;
 import it.unipi.adii.iot.wsms.services.MQTT;
 import it.unipi.adii.iot.wsms.services.RegistrationService;
 import it.unipi.adii.iot.wsms.services.DBService;
+import it.unipi.adii.iot.wsms.utils.Parameters;
 
 public class Collector {
     private static DBService th = DBService.getInstance();

@@ -12,12 +12,12 @@ import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 
-import it.unipi.adii.iot.wsms.device.IoTDevice;
+import it.unipi.adii.iot.wsms.device.CoAPDevice;
 
 public class ResourceRegistration extends CoapResource {
-	private static final Logger logger = LogManager.getLogger(IoTDevice.class);
+	private static final Logger logger = LogManager.getLogger(CoAPDevice.class);
 	private static final DBService th = DBService.getInstance();
-	private static final Collection<IoTDevice> coapDevices = Collections.synchronizedList(new ArrayList<>());
+	private static final Collection<CoAPDevice> coapDevices = Collections.synchronizedList(new ArrayList<>());
 	
 	public ResourceRegistration() {
 		super("registration");
@@ -33,7 +33,7 @@ public class ResourceRegistration extends CoapResource {
 			if(th.addSensor(ipAddress, dataType)) {
 				System.out.println("The smart device [" + ipAddress + "] has been registered!");
         		synchronized(coapDevices) {
-        			ResourceRegistration.coapDevices.add(new IoTDevice(ipAddress, dataType));
+        			ResourceRegistration.coapDevices.add(new CoAPDevice(ipAddress, dataType));
         		}
 				logger.info("The smart device [" + ipAddress + "] has been registered!");
 				exchange.respond(CoAP.ResponseCode.CREATED, "Registration successful!".getBytes(StandardCharsets.UTF_8));
@@ -62,7 +62,7 @@ public class ResourceRegistration extends CoapResource {
 	private static int contains(final String ipAddress) {
 		int idx = -1;
 		
-		for(IoTDevice device : coapDevices) {
+		for(CoAPDevice device : coapDevices) {
 			idx++;
 			if(device.getIP().contentEquals(ipAddress))
 				return idx;

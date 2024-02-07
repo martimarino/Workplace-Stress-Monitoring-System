@@ -20,9 +20,9 @@ import static it.unipi.adii.iot.wsms.services.DBService.db_Service;
 import static it.unipi.adii.iot.wsms.utils.Parameters.*;
 
 
-public class IoTDevice {
+public class CoAPDevice {
 
-	public static final Logger logger = LogManager.getLogger(IoTDevice.class);
+	public static final Logger logger = LogManager.getLogger(CoAPDevice.class);
 
 	private final String ip;
 	private String mode = "auto";
@@ -34,7 +34,7 @@ public class IoTDevice {
 
 
 
-	public IoTDevice(String ipAddress, String dataType) {
+	public CoAPDevice(String ipAddress, String dataType) {
 
 		this.ip = ipAddress;
 		this.resSensor = new CoapClient("coap://[" + ipAddress + "]/sensor");

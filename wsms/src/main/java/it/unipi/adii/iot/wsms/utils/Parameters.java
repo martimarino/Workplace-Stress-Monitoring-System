@@ -62,7 +62,7 @@ public class Parameters {
 
     private Timestamp currentTimestamp;
 
-    public setInitTime() {
+    public static void setInitTime() {
         Calendar cal = Calendar.getInstance();
         cal.set(Calendar.HOUR_OF_DAY, 7);
         cal.set(Calendar.MINUTE, 45);
@@ -74,7 +74,7 @@ public class Parameters {
 
 
 
-    public Timestamp adjustTime() {
+    public static Timestamp adjustTime() {
 
         Calendar cal = Calendar.getInstance();
         cal.setTime(currentTimestamp);

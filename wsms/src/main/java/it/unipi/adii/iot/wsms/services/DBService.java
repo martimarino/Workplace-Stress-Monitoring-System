@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.sql.*;
 import java.util.Date;
 
+import it.unipi.adii.iot.wsms.utils.Parameters;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -66,7 +67,7 @@ public final class DBService {
 
 		String query =  "DELETE FROM sensor";
 		getConnection();
-		try (PreparedStatement ps = conn.prepareStatement(query);)
+		try (PreparedStatement ps = conn.prepareStatement(query))
 		{
 			ps.executeUpdate();
 		} catch (SQLException se) {
@@ -79,7 +80,7 @@ public final class DBService {
 
 		String query =  "DELETE FROM observation";
 		getConnection();
-		try (PreparedStatement ps = conn.prepareStatement(query);)
+		try (PreparedStatement ps = conn.prepareStatement(query))
 		{
 			ps.executeUpdate();
 		} catch (SQLException se) {
@@ -93,7 +94,7 @@ public final class DBService {
 		System.out.println("NodeId: " + nodeId + ", DataType: " + dataType);
 		boolean success = true;
 		getConnection();
-		try (PreparedStatement ps = conn.prepareStatement(query);)
+		try (PreparedStatement ps = conn.prepareStatement(query))
 		{
 			ps.setString(1, nodeId);
 			ps.setString(2, dataType);
@@ -115,7 +116,7 @@ public final class DBService {
 		String query =  "DELETE FROM sensor where nodeId = ? and dataType = ?";
 		boolean success = true;
 		getConnection();
-		try (PreparedStatement ps = conn.prepareStatement(query);)
+		try (PreparedStatement ps = conn.prepareStatement(query))
 		{
 			ps.setString(1, nodeId);
 			ps.setString(2, dataType);
@@ -138,13 +139,13 @@ public final class DBService {
 		String query = "INSERT INTO observation (sensor, value, timestamp) VALUES (?, ?, ?);";
 		boolean success = true;
 		getConnection();
-		try (PreparedStatement ps = conn.prepareStatement(query);)
+		try (PreparedStatement ps = conn.prepareStatement(query))
 		{
 			ps.setString(1, nodeId);
 			ps.setInt(2, value);
 			Date actualDate = new Date();
 			Timestamp ts = new Timestamp(actualDate.getTime());
-			ts = adjustTime();
+			ts = Parameters.adjustTime();
 			ps.setTimestamp(3, ts);
 			int insertedRow = ps.executeUpdate();
 			if(insertedRow < 1) {
@@ -159,33 +160,11 @@ public final class DBService {
 		return success;
 	}
 
-
-	public boolean updateSensorState(String sensor, short status) {
-		String query = "UPDATE sensor SET active=? WHERE nodeId=?;";
-		boolean success = true;
-		getConnection();
-		try (PreparedStatement ps = conn.prepareStatement(query);)
-		{
-			ps.setShort(1, status);
-			ps.setString(2, sensor);
-			int insertedRow = ps.executeUpdate();
-			if(insertedRow < 1) {
-				logger.warn("Something wrong during add observation!");
-				success = false;
-			}
-
-		} catch (SQLException se) {
-			logger.error("Error in the add observation query! ", se);
-			success = false;
-		}
-		return success;
-	}
-
 	public boolean checkSensorExistence(String sensor) {
 		String query = "SELECT nodeId FROM sensor WHERE nodeId=?;";
 		boolean success = false;
 		getConnection();
-		try (PreparedStatement ps = conn.prepareStatement(query);)
+		try (PreparedStatement ps = conn.prepareStatement(query))
 		{
 			ps.setString(1, sensor);
 			ResultSet rs = ps.executeQuery();
