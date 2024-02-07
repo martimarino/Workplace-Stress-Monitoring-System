@@ -1,5 +1,5 @@
-mosquitto_sub -h "fd00::1" -t status
+mosquitto_sub -h "fd00::1" -t humidity_sample
 
-mosquitto_pub -h fd00::1 -t actuator -m "aaa"
+mosquitto_pub -h fd00::1 -t humidity_13905
 
 less /var/log/mosquitto/mosquitto.log

@@ -32,9 +32,7 @@ public class CoAPDevice {
 	private CoapClient resSwitch;
 	private boolean stopObserve = false;
 
-
-
-	public CoAPDevice(String ipAddress, String dataType) {
+	public IoTDevice(String ipAddress, String dataType) {
 
 		this.ip = ipAddress;
 		this.resSensor = new CoapClient("coap://[" + ipAddress + "]/sensor");
@@ -49,6 +47,7 @@ public class CoAPDevice {
 						boolean isAuto = true;
 
 						boolean success = true;
+						//Timestamp ts = Parameters.adjustTime(15);
 
 						if(response.getResponseText() == null || response.getResponseText().isEmpty())
 							return;
@@ -67,7 +66,7 @@ public class CoAPDevice {
 						}
 
 						if(ip.endsWith(Integer.toString(nodeId))) {
-							if(!DBService.addObservation(ip, value)) {
+							if(!DBService.addObservation(Integer.toString(nodeId), value)) {
 								logger.warn("Impossible to add new observation!");
 								success = false;
 							}
@@ -106,7 +105,7 @@ public class CoAPDevice {
 							req.send();
 							System.out.println("Sent PUT color g to switch");
 						}
-						DBService.addObservation(ip, value);
+						DBService.addObservation(Integer.toString(nodeId), value);
 
 						// request for mode changed
 						if(isAuto && mode.equals("man")) {

@@ -113,14 +113,14 @@ pub_handler(const char *topic, uint16_t topic_len, const uint8_t *chunk,
 
     if(strcmp(topic, message) == 0) {
         if(strcmp((const char *)chunk, "inc")==0){
-            printf("Turn on humidifier, high humidity level \n");
+     	    printf("Turn on humidifier, low humidity level \n");
             leds_off(4);
             leds_on(2);
             inc_humidity = true;
             dec_humidity = false;
         }
         else if(strcmp((const char *)chunk, "dec")==0){
-            printf("Turn on dehumidifier, low humidity level \n");
+            printf("Turn on dehumidifier, high humidity level \n");
             leds_off(4);
             leds_on(2);
             inc_humidity = false;
@@ -227,7 +227,7 @@ update_humidity_level(void)
         if(humidity_level < MIN_HUMIDITY)
             humidity_level = MIN_HUMIDITY;
     }else{
-        humidity_level += (rand() % 11) - 5; //variation in [-5,5] interval
+        humidity_level += (rand() % 7) - 3; //variation in [-3,3] interval
 	if(humidity_level > MAX_HUMIDITY)
 	   humidity_level = MAX_HUMIDITY;
 	else if(humidity_level < MIN_HUMIDITY)

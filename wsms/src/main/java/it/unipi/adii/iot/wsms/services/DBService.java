@@ -145,7 +145,6 @@ public final class DBService {
 			ps.setInt(2, value);
 			Date actualDate = new Date();
 			Timestamp ts = new Timestamp(actualDate.getTime());
-			ts = Parameters.adjustTime();
 			ps.setTimestamp(3, ts);
 			int insertedRow = ps.executeUpdate();
 			if(insertedRow < 1) {

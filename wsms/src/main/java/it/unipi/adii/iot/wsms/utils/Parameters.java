@@ -3,6 +3,7 @@ package it.unipi.adii.iot.wsms.utils;
 
 import java.sql.Timestamp;
 import java.util.Calendar;
+import java.util.TimeZone;
 
 public class Parameters {
 
@@ -14,14 +15,17 @@ public class Parameters {
     public static final int UPPER_BOUND_TEMP = 25; // in °C
     public static final int COMFORT_TEMP = 22;		// in °C
 
-    public static final int LOWER_BOUND_HUM = 30; // in %
+    public static final int LOWER_BOUND_HUM = 40; // in %
     public static final int UPPER_BOUND_HUM = 60; // in %
     public static final int COMFORT_HUM = 40;	   // in %
 
     public static final int LOWER_BOUND_BRIGHT = 300; // in lux
     public static final int UPPER_BOUND_BRIGHT = 400; // in lux
 
-
+    public static final String incCommand = "inc";
+    public static final String offCommand = "off";
+    public static final String decCommand = "dec";
+    public static final String goodCommand = "good";
 
     public static int getLowerBound(String dataType) {
         switch (dataType) {
@@ -64,22 +68,23 @@ public class Parameters {
 
     public static void setInitTime() {
         Calendar cal = Calendar.getInstance();
-        cal.set(Calendar.HOUR_OF_DAY, 7);
+        cal.set(Calendar.HOUR_OF_DAY, 6);
         cal.set(Calendar.MINUTE, 45);
         cal.set(Calendar.SECOND, 0);
         cal.set(Calendar.MILLISECOND, 0);
-
+        cal.setTimeZone(TimeZone.getTimeZone("UTC"));
+        System.out.println("ora: " + cal.getTime().getTime());
         currentTimestamp = new Timestamp(cal.getTime().getTime());
     }
 
 
 
-    public static Timestamp adjustTime() {
+    public static Timestamp adjustTime(int min) {
 
         Calendar cal = Calendar.getInstance();
         cal.setTime(currentTimestamp);
 
-        cal.add(Calendar.MINUTE, 15);
+        cal.add(Calendar.MINUTE, min);
 
         currentTimestamp = new Timestamp(cal.getTime().getTime());
 

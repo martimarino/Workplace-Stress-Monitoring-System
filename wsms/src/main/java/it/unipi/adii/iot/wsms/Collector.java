@@ -13,7 +13,7 @@ public class Collector {
     public static void main(String[] args) {
 
         try {
-            th.cleanDB();
+            //th.cleanDB();
 
             mc = new MQTT();
             rs = new RegistrationService();

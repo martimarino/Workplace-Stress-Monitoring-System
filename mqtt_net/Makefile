@@ -1,4 +1,5 @@
 CONTIKI_PROJECT = WSMS
+LDLIBS = -lm
 all: $(CONTIKI_PROJECT)
 
 CONTIKI = ../..
@@ -11,5 +12,3 @@ MODULES += $(CONTIKI_NG_APP_LAYER_DIR)/mqtt
 MODULES_REL += arch/platform/$(TARGET)
 
 include $(CONTIKI)/Makefile.include
-
-TARGET_LIBFILES += -lm
