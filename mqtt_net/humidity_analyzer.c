@@ -37,7 +37,7 @@ static const char *broker_ip = MQTT_CLIENT_BROKER_IP_ADDR;
 // Defaukt config values
 #define DEFAULT_BROKER_PORT         1883
 #define DEFAULT_PUBLISH_INTERVAL    (10 * CLOCK_SECOND)
-#define LOWER_BOUND_HUM             30
+#define LOWER_BOUND_HUM             40
 #define UPPER_BOUND_HUM             60
 #define VARIATION                   1o
 
@@ -115,25 +115,25 @@ pub_handler(const char *topic, uint16_t topic_len, const uint8_t *chunk,
         if(strcmp((const char *)chunk, "inc")==0){
      	    printf("Turn on humidifier, low humidity level \n");
             leds_off(4);
-            leds_on(2);
+            leds_on(2); //led red, all the others excluding the yellow single led off
             inc_humidity = true;
             dec_humidity = false;
         }
         else if(strcmp((const char *)chunk, "dec")==0){
             printf("Turn on dehumidifier, high humidity level \n");
             leds_off(4);
-            leds_on(2);
+            leds_on(2); //led red, all the others excluding the yellow single led off
             inc_humidity = false;
             dec_humidity = true;
         }else if (strcmp((const char *)chunk, "good")==0){
             printf("Good humidity level!\n");
             leds_off(2);
-            leds_on(4);
+            leds_on(4); //led green, all the others excluding the yellow single led off
             inc_humidity = false;
             dec_humidity = false;
         }else if(strcmp((const char *)chunk, "off")==0){
             printf("Manual handling on!\n");
-            leds_set(0);
+            leds_set(0); //yellow single led off
             inc_humidity = false;
             dec_humidity = false;
         }else{
@@ -269,7 +269,7 @@ while(1) {
 
     if((ev == PROCESS_EVENT_TIMER && data == &periodic_timer) ||
     ev == PROCESS_EVENT_POLL){
-	printf("State %d\n", state);
+	//printf("State %d\n", state);
 
         if(state==STATE_INIT){
             if(have_connectivity()==true)
@@ -318,8 +318,6 @@ while(1) {
 
             if(mode != 1)
                 leds_on(1);
-            else
-                leds_off(1);
 
             printf("%s\n", app_buffer);
             mqtt_publish(&conn, NULL, pub_topic, (uint8_t *)app_buffer,
@@ -338,7 +336,7 @@ while(1) {
 		btn = (button_hal_button_t *)data;
 		mode = (mode == 0)? 1 : 0;
 		printf("Button pressed (%s)\n", BUTTON_HAL_GET_DESCRIPTION(btn));
-	    }
+  }
 }
 
 PROCESS_END();

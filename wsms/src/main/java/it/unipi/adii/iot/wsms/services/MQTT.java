@@ -33,7 +33,7 @@ public class MQTT implements MqttCallback {
 			int timeWindow = 50000;
 			try {
 				String broker = "tcp://127.0.0.1:1883";
-				String clientId = "Collector";
+				String clientId = "JavaCollector";
 				mqttClient = new MqttClient(broker, clientId);
 				mqttClient.setCallback( this );
 				mqttClient.connect();
@@ -90,11 +90,11 @@ public class MQTT implements MqttCallback {
 	public void messageArrived(String topic, MqttMessage message) {
 		byte[] payload = message.getPayload();
 		logger.info("Message arrived: " + new String(payload));
-		Timestamp ts;
+		System.out.println("Message arrived: " + new String(payload));
 		String reply = "";
 		try {
 			JSONObject sensorMessage = (JSONObject) JSONValue.parseWithException(new String(payload));
-			//ts = Parameters.adjustTime(15);
+
 			if (sensorMessage.containsKey("humidity")) {
 				int value = Integer.parseInt(sensorMessage.get("humidity").toString());
 				String nodeId = sensorMessage.get("node").toString();
@@ -110,24 +110,28 @@ public class MQTT implements MqttCallback {
 					if(!commandH.equals(offCommand))
 						publish(pubTopic, reply, nodeId);
 					logger.info("[MANUAL MODE] - "+nodeId+" - the humidity is controlled manually");
+					System.out.println("[MANUAL MODE] - "+nodeId+" - the humidity is controlled manually");
 				}
 				else if (value >= getLowerBound("humidity") && value <= getUpperBound("humidity")) {
 					reply = goodCommand;
 					if(!commandH.equals(goodCommand))
 						publish(pubTopic, reply, nodeId);
 					logger.info("[NORMAL] - "+nodeId+" - the humidity is comfortable!");
+					System.out.println("[NORMAL] - "+nodeId+" - the humidity is comfortable!");
 				} else if(value > getUpperBound("humidity"))
 				{
 					reply = decCommand;
 					if(!commandH.equals(decCommand))
 						publish(pubTopic, reply, nodeId);
 					logger.warn("[CRITICAL] - "+nodeId+" - the humidity is too high!");
+					System.out.println("[CRITICAL] - "+nodeId+" - the humidity is too high!");
 					th.updateSensorState(nodeId, (short)0);
 				} else if(value < getLowerBound("humidity")){
 					reply = incCommand;
 					if(!commandH.equals(incCommand))
 						publish(pubTopic, reply, nodeId);
 					logger.warn("[CRITICAL] - "+nodeId+" - the humidity is too low.");
+					System.out.println("[CRITICAL] - "+nodeId+" - the humidity is too low.");
 				}
 
 				commandH = reply;
@@ -145,10 +149,9 @@ public class MQTT implements MqttCallback {
 				if(!th.checkSensorExistence(nodeId)) {
 					th.addSensor(nodeId, "brightness");
 				}
-				ts = Parameters.adjustTime(15);
 				DBService.addObservation(nodeId, value);
 				String pubTopic1 = "brightness";
-				int lux = 100;
+				int bulb = 150;
 				if(mode == 2)
 				{
 					reply = offCommand;
@@ -156,26 +159,29 @@ public class MQTT implements MqttCallback {
 						publish(pubTopic1, reply, nodeId);
 
 					logger.info("[MANUAL MODE] - "+nodeId+" - the brightness is controlled manually");
+					System.out.println("[MANUAL MODE] - "+nodeId+" - the brightness is controlled manually");
 				}
-				else if(mode == 1 && (value + lux) > getUpperBound("brightness"))
+				else if(mode == 1 && (value-bulb) > getLowerBound("brightness"))
 				{
 					reply = decCommand;
 					if(!commandB.get(nodeId).equals(reply))
 						publish(pubTopic1, reply, nodeId);
 					logger.info("[CRITICAL] - "+nodeId+" - the brightness is too high!");
+					System.out.println("[CRITICAL] - "+nodeId+" - the brightness is too high!");
 				} else if(mode == 0 && value < getLowerBound("brightness")) {
 					reply = incCommand;
-					System.out.println("comm:" + reply + " commB: " + commandB.get(nodeId));
 					if(!commandB.get(nodeId).equals(reply))
 						publish(pubTopic1, reply,
 								nodeId);
 
 					logger.info("[CRITICAL] - "+nodeId+" - the brightness is too low.");
+					System.out.println("[CRITICAL] - "+nodeId+" - the brightness is too low.");
 				}else{
 					reply = goodCommand;
 					if(!commandB.get(nodeId).equals(reply))
 						publish(pubTopic1, reply, nodeId);
 					logger.info("[NORMAL] - "+nodeId+" - the brightness is comfortable!");
+					System.out.println("[NORMAL] - "+nodeId+" - the brightness is comfortable!");
 				}
 				commandB.put(nodeId, reply);
 
