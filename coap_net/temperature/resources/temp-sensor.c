@@ -85,7 +85,7 @@ static void temp_get_handler(coap_message_t *request, coap_message_t *response, 
 		}
 
 		// Fill the buffer
-        snprintf((char *)buffer, COAP_MAX_CHUNK_SIZE, "{\"node_id\":%d,\"value\":%d,\"isAuto\":%s}", node_id, temperature, isAuto ? "true" : "false");
+        snprintf((char *)buffer, COAP_MAX_CHUNK_SIZE, "{\"node\":%d,\"value\":%d,\"isAuto\":%s}", node_id, temperature, isAuto ? "true" : "false");
 		int length = strlen((char*)buffer);
 
 		LOG_INFO("%s, RL=%d\n", buffer, recoverLevel);

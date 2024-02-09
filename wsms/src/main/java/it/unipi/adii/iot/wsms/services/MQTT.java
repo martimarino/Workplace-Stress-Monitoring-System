@@ -91,12 +91,14 @@ public class MQTT implements MqttCallback {
 		byte[] payload = message.getPayload();
 		logger.info("Message arrived: " + new String(payload));
 		System.out.println("Message arrived: " + new String(payload));
+
 		String reply = "";
 		try {
 			JSONObject sensorMessage = (JSONObject) JSONValue.parseWithException(new String(payload));
 
-			if (sensorMessage.containsKey("humidity")) {
-				int value = Integer.parseInt(sensorMessage.get("humidity").toString());
+			if (topic.contains("humidity")) {
+				//ts = Parameters.adjustTime(15);
+				int value = Integer.parseInt(sensorMessage.get("value").toString());
 				String nodeId = sensorMessage.get("node").toString();
 				int mode = Integer.parseInt(sensorMessage.get("mode").toString());
 				if(!th.checkSensorExistence(nodeId)) {
@@ -137,9 +139,9 @@ public class MQTT implements MqttCallback {
 				commandH = reply;
 
 			}
-			if (sensorMessage.containsKey("brightness")) {
+			if (topic.contains("brightness")) {
 
-				Integer value = Integer.parseInt(sensorMessage.get("brightness").toString());
+				Integer value = Integer.parseInt(sensorMessage.get("value").toString());
 				String nodeId = sensorMessage.get("node").toString();
 				Integer mode = Integer.parseInt(sensorMessage.get("mode").toString());
 
@@ -149,6 +151,7 @@ public class MQTT implements MqttCallback {
 				if(!th.checkSensorExistence(nodeId)) {
 					th.addSensor(nodeId, "brightness");
 				}
+				//ts = Parameters.adjustTime(30);
 				DBService.addObservation(nodeId, value);
 				String pubTopic1 = "brightness";
 				int bulb = 150;

@@ -55,7 +55,7 @@ public class CoAPDevice {
 						try {
 							JSONObject sensorMessage = (JSONObject) JSONValue.parseWithException(new String(response.getPayload()));
 
-							nodeId = Integer.parseInt(sensorMessage.get("node_id").toString());
+							nodeId = Integer.parseInt(sensorMessage.get("node").toString());
 							value = Integer.parseInt(sensorMessage.get("value").toString());
 							isAuto = Boolean.parseBoolean(sensorMessage.get("isAuto").toString());
 
