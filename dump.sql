@@ -24,9 +24,9 @@ DROP TABLE IF EXISTS `observation`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `observation` (
                                `id` int(11) NOT NULL AUTO_INCREMENT,
-                               `timestamp` datetime DEFAULT NULL,
+                               `timestamp` datetime NOT NULL,
                                `value` int(11) NOT NULL,
-                               `sensor` varchar(255) DEFAULT NULL,
+                               `sensor` varchar(255) NOT NULL,
                                PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3898 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -49,8 +49,8 @@ DROP TABLE IF EXISTS `sensor`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `sensor` (
-                          `nodeId` varchar(255) DEFAULT NULL,
-                          `dataType` varchar(255) DEFAULT NULL
+                          `nodeId` varchar(255) NOT NULL,
+                          `dataType` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
